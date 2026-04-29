@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hasi Elektronic — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#eef4fb;--s:#fff;--b:#d6e4f0;--b2:#c2d6ea;
+  --hasi:#33afe2;--hasi-d:#1d8fbe;--hasi-soft:#e8f5fc;
+  --t:#1a2a3a;--m:#5a7a90;
+  --green:#0d9f6e;--amber:#d97706;--red:#dc2626;--purple:#7c3aed;
+}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 15% 15%,rgba(51,175,226,0.07) 0%,transparent 50%),radial-gradient(circle at 85% 85%,rgba(51,175,226,0.05) 0%,transparent 50%);pointer-events:none;z-index:0}
+
+/* AUTH */
+#auth-screen{position:fixed;inset:0;z-index:999;background:linear-gradient(135deg,#deeef9,#eef4fb);display:flex;align-items:center;justify-content:center}
+.auth-box{background:#fff;border:1px solid var(--b);border-radius:20px;padding:40px 36px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 32px rgba(51,175,226,0.12)}
+.auth-box img{height:44px;margin:0 auto 18px;display:block}
+.auth-sub{font-size:13px;color:var(--m);margin-bottom:22px;font-family:"DM Mono",monospace}
+.auth-inp{width:100%;background:var(--bg);border:1.5px solid var(--b2);border-radius:10px;color:var(--t);padding:12px 16px;font-size:16px;text-align:center;letter-spacing:4px;outline:none;margin-bottom:10px;transition:border-color .2s}
+.auth-inp:focus{border-color:var(--hasi);background:#fff}
+.auth-err{font-size:12px;color:var(--red);height:16px;margin-bottom:10px}
+.auth-btn{width:100%;background:var(--hasi);color:#fff;border:none;padding:12px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s}
+.auth-btn:hover{background:var(--hasi-d)}
+
+/* LAYOUT */
+#app{display:none;position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.topbar h1{font-size:22px;font-weight:700;color:var(--t)}
+.topbar h1 span{color:var(--hasi)}
+.nav-btn{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .2s;border:1.5px solid var(--b2);background:#fff;color:var(--m)}
+.nav-btn:hover{border-color:var(--hasi);color:var(--hasi)}
+.nav-btn.primary{background:var(--hasi);color:#fff;border-color:var(--hasi)}
+.nav-btn.primary:hover{background:var(--hasi-d)}
+.badge-live{font-size:10px;background:rgba(13,159,110,0.15);color:var(--green);border:1px solid rgba(13,159,110,0.3);padding:2px 8px;border-radius:100px;font-family:"DM Mono",monospace;margin-left:auto}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+@media(max-width:700px){.kpi-grid{grid-template-columns:1fr 1fr}}
+.kpi{background:#fff;border:1.5px solid var(--b);border-radius:16px;padding:18px 16px;box-shadow:0 2px 10px rgba(51,175,226,0.07);position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,var(--hasi))}
+.kpi-icon{font-size:22px;margin-bottom:8px}
+.kpi-val{font-size:26px;font-weight:700;color:var(--t);line-height:1}
+.kpi-label{font-size:10px;font-family:"DM Mono",monospace;color:var(--m);text-transform:uppercase;letter-spacing:.5px;margin-top:5px}
+.kpi-sub{font-size:11px;color:var(--m);margin-top:3px}
+
+/* CHARTS ROW */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px}
+@media(max-width:700px){.charts-row{grid-template-columns:1fr}}
+.card{background:#fff;border:1.5px solid var(--b);border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(51,175,226,0.06)}
+.card-title{font-size:10px;font-family:"DM Mono",monospace;color:var(--hasi);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.card-title::after{content:"";flex:1;height:1.5px;background:linear-gradient(to right,var(--b),transparent)}
+
+/* STATUS BADGES */
+.s-badge{display:inline-flex;align-items:center;font-size:10px;font-family:"DM Mono",monospace;padding:2px 8px;border-radius:100px;font-weight:600;white-space:nowrap}
+
+/* HISTORY TABLE */
+.tbl-wrap{background:#fff;border:1.5px solid var(--b);border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(51,175,226,0.06)}
+.tbl-header{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1.5px solid var(--b)}
+.tbl-header h2{font-size:14px;font-weight:700}
+.search-inp{flex:1;max-width:320px;background:var(--bg);border:1.5px solid var(--b2);border-radius:9px;color:var(--t);padding:8px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;transition:border-color .2s}
+.search-inp:focus{border-color:var(--hasi)}
+table{width:100%;border-collapse:collapse}
+thead th{background:#f0f7fd;padding:10px 14px;text-align:left;font-size:10px;font-family:"DM Mono",monospace;color:var(--m);text-transform:uppercase;letter-spacing:.6px;border-bottom:1.5px solid var(--b)}
+thead th.r{text-align:right}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover td{background:var(--hasi-soft)}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--b);font-size:13px;vertical-align:middle}
+tbody td.r{text-align:right;font-family:"DM Mono",monospace}
+tbody td.mono{font-family:"DM Mono",monospace;font-size:11px;color:var(--hasi)}
+tbody tr:last-child td{border-bottom:none}
+.umsatz-cell{font-weight:700;color:var(--green)}
+.umsatz-cell.zero{color:var(--m);font-weight:400}
+.empty-row{text-align:center;padding:40px;color:var(--m);font-size:13px;font-family:"DM Mono",monospace}
+
+/* DONUT */
+.donut-wrap{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.donut-legend{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-val{margin-left:auto;font-family:"DM Mono",monospace;font-size:11px;color:var(--m)}
+
+/* GERÄTE BARS */
+.bar-list{display:flex;flex-direction:column;gap:8px}
+.bar-item{display:flex;align-items:center;gap:10px;font-size:12px}
+.bar-label{width:130px;color:var(--t);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:var(--bg);border-radius:100px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--hasi),#5bc8f0);border-radius:100px;transition:width .6s ease}
+.bar-num{width:28px;text-align:right;font-family:"DM Mono",monospace;font-size:11px;color:var(--m)}
+
+/* LOADING */
+.loading{text-align:center;padding:60px;color:var(--m);font-family:"DM Mono",monospace;font-size:13px}
+.spin{display:inline-block;width:24px;height:24px;border:2px solid var(--b2);border-top-color:var(--hasi);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <img src="https://mwst-rechner.pages.dev/logo.jpg" alt="Hasi Elektronic">
+    <div class="auth-sub">Dashboard · Admin</div>
+    <input class="auth-inp" type="password" inputmode="numeric" id="auth-inp" placeholder="Passwort">
+    <div class="auth-err" id="auth-err"></div>
+    <button class="auth-btn" id="auth-btn">Einloggen</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <h1>Hasi <span>Dashboard</span></h1>
+    <span class="badge-live" id="last-update">—</span>
+    <a href="https://mwst-rechner.pages.dev/reparatur-admin.html" class="nav-btn">📋 Aufträge</a>
+    <a href="https://mwst-rechner.pages.dev/reparatur.html" class="nav-btn">＋ Neuer Auftrag</a>
+    <button class="nav-btn primary" id="btn-refresh">⟳ Aktualisieren</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading-wrap" class="loading">
+    <div class="spin"></div><br>Daten werden geladen...
+  </div>
+
+  <!-- CONTENT (versteckt bis geladen) -->
+  <div id="content" style="display:none">
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi" style="--accent:#33afe2">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-val" id="k-gesamt">—</div>
+        <div class="kpi-label">Gesamt Aufträge</div>
+      </div>
+      <div class="kpi" style="--accent:#0d9f6e">
+        <div class="kpi-icon">💶</div>
+        <div class="kpi-val" id="k-umsatz">—</div>
+        <div class="kpi-label">Umsatz Netto</div>
+        <div class="kpi-sub" id="k-umsatz-brutto">— brutto</div>
+      </div>
+      <div class="kpi" style="--accent:#d97706">
+        <div class="kpi-icon">🔧</div>
+        <div class="kpi-val" id="k-offen">—</div>
+        <div class="kpi-label">Offen</div>
+      </div>
+      <div class="kpi" style="--accent:#7c3aed">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-val" id="k-done">—</div>
+        <div class="kpi-label">Abgeschlossen</div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-row">
+      <!-- Monatlicher Umsatz -->
+      <div class="card">
+        <div class="card-title">Monatlicher Umsatz (Netto)</div>
+        <canvas id="chart-monthly" height="200"></canvas>
+      </div>
+      <!-- Status + Geräte -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="flex:1">
+          <div class="card-title">Status-Verteilung</div>
+          <canvas id="chart-status" height="160"></canvas>
+          <div class="donut-legend" id="legend-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gerätetypen -->
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-title">Häufigste Gerätetypen</div>
+      <div class="bar-list" id="geraete-bars"></div>
+    </div>
+
+    <!-- HISTORY TABLE -->
+    <div class="tbl-wrap">
+      <div class="tbl-header">
+        <h2>📂 Auftragsverlauf</h2>
+        <input class="search-inp" type="text" id="search-inp" placeholder="🔍 Suche: Kunde, Nr., Gerät...">
+        <div style="font-size:12px;color:var(--m);font-family:'DM Mono',monospace" id="tbl-count"></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Auftrag-Nr.</th>
+            <th>Datum</th>
+            <th>Kunde</th>
+            <th>Gerät</th>
+            <th>Status</th>
+            <th>ABs</th>
+            <th class="r">Umsatz netto</th>
+            <th class="r">Umsatz brutto</th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+const W    = 'https://hasi-reparatur.hguencavdi.workers.dev';
+const AUTH = 'Bearer 71665';
+var allData = null;
+
+// ── FORMAT ────────────────────────────────────────────────────────
+function fmtE(n) {
+  return Number(n||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.') + ' €';
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  var p = s.slice(0,10).split('-');
+  return p[2]+'.'+p[1]+'.'+p[0];
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────
+function doAuth() {
+  var v = document.getElementById('auth-inp').value.trim();
+  if (v === '71665') {
+    sessionStorage.setItem('hasi-dash-ok','1');
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadDashboard();
+  } else {
+    var e = document.getElementById('auth-err');
+    e.textContent = 'Falsches Passwort';
+    document.getElementById('auth-inp').value = '';
+    setTimeout(() => e.textContent='', 2000);
+  }
+}
+document.getElementById('auth-btn').addEventListener('click', doAuth);
+document.getElementById('auth-inp').addEventListener('keydown', e => { if(e.key==='Enter') doAuth(); });
+if (sessionStorage.getItem('hasi-dash-ok') === '1') {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadDashboard();
+}
+
+// ── LOAD ──────────────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('loading-wrap').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+  try {
+    var res  = await fetch(W + '/api/dashboard', { headers: { Authorization: AUTH } });
+    var data = await res.json();
+    allData  = data;
+    renderAll(data);
+    var now = new Date();
+    document.getElementById('last-update').textContent =
+      'Zuletzt: ' + ('0'+now.getHours()).slice(-2) + ':' + ('0'+now.getMinutes()).slice(-2);
+  } catch(e) {
+    document.getElementById('loading-wrap').innerHTML = '<div style="color:red">Fehler: '+e.message+'</div>';
+  }
+}
+document.getElementById('btn-refresh').addEventListener('click', loadDashboard);
+
+// ── RENDER ────────────────────────────────────────────────────────
+function renderAll(data) {
+  renderKPI(data.kpi);
+  renderMonthly(data.monthly);
+  renderStatus(data.status);
+  renderGeraete(data.geraete);
+  renderHistory(data.history);
+  document.getElementById('loading-wrap').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+}
+
+function renderKPI(kpi) {
+  document.getElementById('k-gesamt').textContent = kpi.gesamt_auftraege || 0;
+  document.getElementById('k-umsatz').textContent = fmtE(kpi.gesamt_umsatz_netto);
+  document.getElementById('k-umsatz-brutto').textContent = fmtE(kpi.gesamt_umsatz_brutto) + ' brutto';
+  document.getElementById('k-offen').textContent  = kpi.offen || 0;
+  document.getElementById('k-done').textContent   = kpi.abgeschlossen || 0;
+}
+
+var chartMonthly = null;
+function renderMonthly(monthly) {
+  var labels = monthly.map(m => {
+    var p = m.monat.split('-'); return p[1]+'/'+p[0];
+  });
+  var vals = monthly.map(m => Number(m.umsatz_netto)||0);
+  if (chartMonthly) chartMonthly.destroy();
+  var ctx = document.getElementById('chart-monthly').getContext('2d');
+  chartMonthly = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Netto €',
+        data: vals,
+        backgroundColor: 'rgba(51,175,226,0.25)',
+        borderColor: '#33afe2',
+        borderWidth: 2,
+        borderRadius: 6,
+        hoverBackgroundColor: 'rgba(51,175,226,0.45)',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: '#d6e4f0' },
+          ticks: { callback: v => fmtE(v), font: { size: 11 }, color: '#5a7a90' }
+        },
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#5a7a90' } }
+      }
+    }
+  });
+}
+
+var chartStatus = null;
+function renderStatus(status) {
+  var colors = {
+    'Neu':'#33afe2','In Bearbeitung':'#2563eb','Teile bestellt':'#ea580c',
+    'Warten auf Kunde':'#7c3aed','Fertig':'#0d9f6e','Abgeholt':'#5a7a90','Abgelehnt':'#dc2626'
+  };
+  var labels = status.map(s => s.status);
+  var vals   = status.map(s => s.anzahl);
+  var bgs    = labels.map(l => colors[l] || '#33afe2');
+  if (chartStatus) chartStatus.destroy();
+  var ctx = document.getElementById('chart-status').getContext('2d');
+  chartStatus = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: vals, backgroundColor: bgs, borderWidth: 0, hoverOffset: 4 }] },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: { legend: { display: false } }
+    }
+  });
+  // Legend
+  var total = vals.reduce((a,b)=>a+b,0);
+  document.getElementById('legend-status').innerHTML = status.map((s,i) =>
+    '<div class="legend-item">'
+    +'<div class="legend-dot" style="background:'+(bgs[i]||'#33afe2')+'"></div>'
+    +'<span>'+s.status+'</span>'
+    +'<span class="legend-val">'+s.anzahl+' ('+Math.round(s.anzahl/total*100)+'%)</span>'
+    +'</div>'
+  ).join('');
+}
+
+function renderGeraete(geraete) {
+  if (!geraete.length) { document.getElementById('geraete-bars').innerHTML = '<div style="color:var(--m);font-size:13px">Keine Daten</div>'; return; }
+  var max = geraete[0].anzahl;
+  document.getElementById('geraete-bars').innerHTML = geraete.map(g =>
+    '<div class="bar-item">'
+    +'<div class="bar-label" title="'+g.geraet_typ+'">'+g.geraet_typ+'</div>'
+    +'<div class="bar-track"><div class="bar-fill" style="width:'+Math.round(g.anzahl/max*100)+'%"></div></div>'
+    +'<div class="bar-num">'+g.anzahl+'</div>'
+    +'</div>'
+  ).join('');
+}
+
+// Status badge
+function statusBadge(s) {
+  var map = {
+    'Neu':             'background:rgba(51,175,226,0.12);color:#1d8fbe;border:1px solid rgba(51,175,226,0.25)',
+    'In Bearbeitung':  'background:rgba(37,99,235,0.1);color:#2563eb;border:1px solid rgba(37,99,235,0.2)',
+    'Teile bestellt':  'background:rgba(234,88,12,0.1);color:#ea580c;border:1px solid rgba(234,88,12,0.2)',
+    'Warten auf Kunde':'background:rgba(124,58,237,0.1);color:#7c3aed;border:1px solid rgba(124,58,237,0.2)',
+    'Fertig':          'background:rgba(13,159,110,0.1);color:#0d9f6e;border:1px solid rgba(13,159,110,0.2)',
+    'Abgeholt':        'background:rgba(90,122,144,0.1);color:#5a7a90;border:1px solid rgba(90,122,144,0.2)',
+    'Abgelehnt':       'background:rgba(220,38,38,0.1);color:#dc2626;border:1px solid rgba(220,38,38,0.2)',
+  };
+  return '<span class="s-badge" style="'+(map[s]||map['Neu'])+'">'+s+'</span>';
+}
+
+var filteredHistory = [];
+function renderHistory(history, q) {
+  var data = q ? history.filter(r =>
+    [r.nr, r.k_name, r.geraet_typ, r.modell].some(v => (v||'').toLowerCase().includes(q.toLowerCase()))
+  ) : history;
+  filteredHistory = data;
+  document.getElementById('tbl-count').textContent = data.length + ' Einträge';
+  var tbody = document.getElementById('history-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">Keine Einträge gefunden</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(r => {
+    var netto  = Number(r.umsatz_netto)||0;
+    var brutto = netto * 1.19;
+    return '<tr onclick="openAuftrag('+r.id+')">'
+      +'<td class="mono">'+( r.nr||'—')+'</td>'
+      +'<td>'+fmtDate(r.datum)+'</td>'
+      +'<td style="font-weight:600">'+(r.k_name||'—')+'</td>'
+      +'<td style="color:var(--m)">'+(r.geraet_typ||'—')+(r.modell?' <span style="font-size:11px">'+r.modell+'</span>':'')+'</td>'
+      +'<td>'+statusBadge(r.status||'Neu')+'</td>'
+      +'<td style="text-align:center;font-family:\'DM Mono\',monospace;font-size:12px">'+(r.ab_count||0)+'</td>'
+      +'<td class="r '+(netto>0?'umsatz-cell':'umsatz-cell zero')+'">'+fmtE(netto)+'</td>'
+      +'<td class="r" style="color:var(--m);font-size:12px">'+fmtE(brutto)+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function openAuftrag(id) {
+  window.location.href = 'https://mwst-rechner.pages.dev/reparatur-admin.html';
+}
+
+document.getElementById('search-inp').addEventListener('input', function() {
+  if (allData) renderHistory(allData.history, this.value);
+});
+</script>
+</body>
+</html>
