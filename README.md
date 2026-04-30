@@ -1,62 +1,45 @@
-# HASI CAD
+# hasi-elektronic / cad-tool
 
-Browser-based 2D technical drawing editor. Pure HTML5 Canvas (no external CAD libs),
-React + Vite + TypeScript shell, dark industrial theme, AutoCAD-style keyboard shortcuts.
+Two things live in this repo:
 
-## Features
+| Path | What it is | Deploy target |
+| ---- | ---------- | ------------- |
+| `index.html`, `dashboard.html` | Static HTML CAD configurator (Flansche / Drückteile / Konus / Schablonen) — your existing tool, unchanged | (your existing Pages project) |
+| `app/` | **HASI CAD** — a new browser-based 2D drafting editor (React + Vite + TS + raw Canvas) | `hasi-cad.pages.dev` |
 
-- Infinite canvas with pan (middle-click / Alt-drag) and zoom (wheel, towards cursor)
-- Configurable minor/major grid (1/2/5/10/20/50/100 mm) with origin cross
-- Drawing tools: **Line, Polyline, Rectangle, Circle, Arc, Ellipse, Dimension**
-- Edit tools: **Select, Move, Copy, Mirror, Offset, Trim, Fillet, Delete**
-- Snap system with priority: endpoint → midpoint/quadrant → center → intersection → grid
-  with distinct yellow markers per snap type
-- **Ortho** mode constrains drawing to horizontal/vertical from last point
-- **Layers**: color, visibility, lock; reorderable defaults (`0`, `Construction`,
-  `Dimensions`)
-- Unlimited undo / redo
-- AutoCAD-style command line at the bottom (history with ↑/↓):
-  - `100,50` — absolute point
-  - `@30,0` — relative point from last
-  - numeric values for radius/length during a tool op
-  - tool aliases (`line`, `circle`, `r`, `c`, …) and `undo`, `redo`, `fit`, `save`
-- Real-time cursor coordinates, distance/angle readout while drawing
-- Properties panel for the selected entity (editable values)
-- DXF R2010 export (HEADER + TABLES + ENTITIES + EOF) and DXF import (LINE,
-  CIRCLE, ARC, LWPOLYLINE, ELLIPSE, TEXT)
-- PWA / offline support via `vite-plugin-pwa`
+## HASI CAD (`app/`)
 
-## Keyboard
+Browser-based 2D technical drawing editor. Pure HTML5 Canvas, no external CAD libs.
 
-```
-L Line     C Circle   R Rectangle   A Arc       P Polyline
-D Dim      V Select   E Ellipse     F Fillet*   T Trim
-G Grid     S Snap     O Ortho       Space repeat last command
-Del Delete selected
-Ctrl+Z / Ctrl+Y  Undo / Redo
-Ctrl+S Save (DXF export)
-ESC Cancel current op    Enter Finish polyline
-?  Help overlay
-```
-*F also performs Zoom-Fit when no entities are selected.*
+### Features
+- Infinite canvas, pan (middle / Alt-drag), zoom-to-cursor (wheel), configurable mm grid + origin cross
+- Drawing: **Line, Polyline, Rect, Circle, Arc, Ellipse, Dimension**
+- Editing: **Select, Move, Copy, Mirror, Offset, Trim, Fillet, Delete**
+- Snap (endpoint > midpoint/quadrant > center > intersection > grid) with per-type yellow markers
+- Ortho mode, layers (color/visibility/lock), unlimited undo/redo
+- AutoCAD-style command line (`100,50`, `@30,0`, distances, tool aliases, ↑/↓ history)
+- Properties panel with editable per-entity fields, status bar, help overlay (`?`)
+- DXF R2010 export (HEADER + TABLES + ENTITIES + EOF) and DXF import
+- PWA / offline-capable
 
-## Develop
-
+### Develop
 ```bash
+cd app
 npm install
 npm run dev      # http://localhost:5173
-npm run build    # → dist/
-npm run preview
+npm run build    # → app/dist/
 ```
 
-## Deploy to Cloudflare Pages
+### Deploy
+GitHub Actions auto-deploys `app/dist/` to the Cloudflare Pages project `hasi-cad`
+on every push to `main` (workflow: `.github/workflows/deploy.yml`).
 
-Project name: `hasi-cad` → `https://hasi-cad.pages.dev`
+Required GitHub repo secrets:
+- `CLOUDFLARE_API_TOKEN` — token with `Account · Cloudflare Pages · Edit` permission
+- `CLOUDFLARE_ACCOUNT_ID` — `ac6ab4ce1149a3591d014841856490af`
 
+Manual deploy from your machine:
 ```bash
-npm run build
+cd app && npm run build
 npx wrangler pages deploy dist --project-name=hasi-cad
 ```
-
-…or connect this GitHub repo to a Cloudflare Pages project and set the build
-command to `npm run build` and output directory to `dist`.
