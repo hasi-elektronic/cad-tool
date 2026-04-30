@@ -20,7 +20,9 @@ export function drawEntities(
     const color = isSelected ? SELECT_COLOR : layer.color;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
-    ctx.lineWidth = isSelected ? 2 : 1.25;
+    // Hairline by default (matches AutoCAD's lineweight 0); slightly heavier
+    // when selected so the highlight reads even over busy geometry.
+    ctx.lineWidth = isSelected ? 1.75 : 1;
     drawEntity(ctx, v, e);
     if (isSelected) drawHandles(ctx, v, e);
   }
@@ -445,13 +447,17 @@ function drawHandles(ctx: CanvasRenderingContext2D, v: Viewport, e: Entity): voi
       handlePoints.push(e.pos);
       break;
   }
+  // AutoCAD-style grips: filled cyan squares with a dark outline so they
+  // remain visible even on cyan-coloured geometry.
   ctx.fillStyle = SELECT_COLOR;
-  ctx.strokeStyle = '#0a0a18';
+  ctx.strokeStyle = '#0d0d10';
   ctx.lineWidth = 1;
   for (const p of handlePoints) {
     const s = worldToScreen(v, p);
+    const x = Math.round(s.x) - 3.5;
+    const y = Math.round(s.y) - 3.5;
     ctx.beginPath();
-    ctx.rect(s.x - 4, s.y - 4, 8, 8);
+    ctx.rect(x, y, 7, 7);
     ctx.fill();
     ctx.stroke();
   }
