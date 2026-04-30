@@ -71,12 +71,38 @@ export interface EllipseEntity extends BaseEntity {
   rotation: number; // radians
 }
 
+export type DimensionKind =
+  | 'aligned'
+  | 'horizontal'
+  | 'vertical'
+  | 'radius'
+  | 'diameter'
+  | 'angular';
+
+export type DimensionArrow = 'tick' | 'arrow';
+
 export interface DimensionEntity extends BaseEntity {
   type: 'dimension';
+  // Default 'aligned' for backwards compatibility with older saved files.
+  kind?: DimensionKind;
+  // Common: linear dims use a→b as measured points; radius/diameter use a as
+  // circle centre and b as a point on the circle/leader endpoint; angular uses
+  // a and b as the two arm-end points around vertex `c`.
   a: Point;
   b: Point;
-  // Perpendicular offset distance from baseline (a→b) for dimension line.
+  c?: Point; // vertex point for angular; centre when explicit (radius/diam)
+  // Perpendicular offset distance from baseline for linear dimension lines,
+  // or arc radius for angular, or leader length for radius/diameter.
   offset: number;
+  // Display options
+  prefix?: string;
+  suffix?: string;
+  // If set, replaces the auto-computed numeric label.
+  override?: string;
+  // Decimal places (default 2).
+  precision?: number;
+  // Arrow head style for the dimension line endpoints.
+  arrow?: DimensionArrow;
 }
 
 export interface TextEntity extends BaseEntity {
@@ -123,6 +149,11 @@ export type ToolId =
   | 'arc'
   | 'polyline'
   | 'dimension'
+  | 'dim_horizontal'
+  | 'dim_vertical'
+  | 'dim_radius'
+  | 'dim_diameter'
+  | 'dim_angular'
   | 'ellipse'
   | 'fillet'
   | 'trim'
