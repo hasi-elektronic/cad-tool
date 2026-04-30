@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+body { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+
+input, button, select { font-family: inherit; }
+
+.scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar::-webkit-scrollbar-thumb { background: #3a3a5a; border-radius: 3px; }
+.scrollbar::-webkit-scrollbar-track { background: transparent; }
+
+canvas { display: block; }
+
+.glow { box-shadow: 0 0 0 1px rgba(51, 175, 226, 0.4); }
