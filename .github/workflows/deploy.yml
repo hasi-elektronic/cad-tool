@@ -1,3 +1,5 @@
+# Deploys app/dist to Cloudflare Pages project `hasi-cad`.
+# First run: creates the project via REST API, then uploads.
 name: Deploy hasi-cad to Cloudflare Pages
 
 on:
