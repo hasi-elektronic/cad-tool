@@ -169,7 +169,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--color-backgrou
 .modtab{display:inline-flex;align-items:center;gap:5px;padding:7px 16px;border:1.5px solid rgba(51,175,226,0.35);background:rgba(51,175,226,0.12);color:#0e8bbf;cursor:pointer;border-radius:7px;font-size:12px;font-weight:700;font-family:inherit;transition:all .15s;}
 .modtab.active{background:#33afe2;color:#fff;border-color:#33afe2;}
 .modtab:hover:not(.active){background:rgba(51,175,226,0.22);}
-#dt-mod,#kn-mod{display:none;}
+#fl-mod,#kn-mod{display:none;}
 </style>
 
 <div class="topbar">
@@ -185,10 +185,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--color-backgrou
   </div>
 </div>
 <div style="display:flex;gap:5px;padding:8px 1.5rem;background:#e8f9ff;border-bottom:2px solid #9de8f8;">
-  <button class="modtab active" onclick="showMod('fl',this)">
+  <button class="modtab" onclick="showMod('fl',this)">
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Flansche
   </button>
-  <button class="modtab" onclick="showMod('dt',this)">
+  <button class="modtab active" onclick="showMod('dt',this)">
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><ellipse cx="12" cy="8" rx="8" ry="4"/><path d="M4 8c0 6 4 10 8 10s8-4 8-10"/></svg>Drückteile
   </button>
   <button class="modtab" onclick="showMod('kn',this)">
