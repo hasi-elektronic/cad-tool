@@ -4,7 +4,7 @@ import type { Tool, ToolContext, ToolEvent, ToolResult } from './types';
 
 export class RectTool implements Tool {
   id = 'rect';
-  hint = 'RECT: pick first corner';
+  hint = 'RECHTECK: erste Ecke wählen';
   private a: Point | null = null;
 
   step(ev: ToolEvent, ctx: ToolContext): ToolResult {
@@ -16,7 +16,7 @@ export class RectTool implements Tool {
       const p = ev.point ?? ctx.cursor;
       if (!this.a) {
         this.a = p;
-        return { done: false, hint: 'RECT: pick opposite corner' };
+        return { done: false, hint: 'RECHTECK: gegenüberliegende Ecke wählen' };
       }
       if (Math.abs(this.a.x - p.x) < 1e-6 || Math.abs(this.a.y - p.y) < 1e-6) {
         return { done: false };

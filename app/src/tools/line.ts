@@ -4,7 +4,7 @@ import type { Tool, ToolContext, ToolEvent, ToolResult } from './types';
 
 export class LineTool implements Tool {
   id = 'line';
-  hint = 'LINE: pick first point';
+  hint = 'LINIE: ersten Punkt wählen';
   private start: Point | null = null;
 
   step(ev: ToolEvent, ctx: ToolContext): ToolResult {
@@ -20,12 +20,12 @@ export class LineTool implements Tool {
       const p = ev.point ?? ctx.cursor;
       if (!this.start) {
         this.start = p;
-        return { done: false, hint: 'LINE: pick next point (ESC to end)' };
+        return { done: false, hint: 'LINIE: nächsten Punkt wählen (ESC beendet)' };
       }
       // The LINE tool chains: emit a segment and use the just-placed point as the new start.
       const e: LineEntity = { id: uid('ln'), type: 'line', layerId: ctx.activeLayerId, a: this.start, b: p };
       this.start = p;
-      return { commit: [e], done: false, hint: 'LINE: pick next point (ESC to end)' };
+      return { commit: [e], done: false, hint: 'LINIE: nächsten Punkt wählen (ESC beendet)' };
     }
     return { done: false };
   }

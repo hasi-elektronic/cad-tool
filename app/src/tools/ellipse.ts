@@ -4,7 +4,7 @@ import type { Tool, ToolContext, ToolEvent, ToolResult } from './types';
 
 export class EllipseTool implements Tool {
   id = 'ellipse';
-  hint = 'ELLIPSE: pick center';
+  hint = 'ELLIPSE: Mittelpunkt wählen';
   private c: Point | null = null;
   private rxPoint: Point | null = null;
 
@@ -18,11 +18,11 @@ export class EllipseTool implements Tool {
       const p = ev.point ?? ctx.cursor;
       if (!this.c) {
         this.c = p;
-        return { done: false, hint: 'ELLIPSE: pick X axis end' };
+        return { done: false, hint: 'ELLIPSE: Endpunkt der X-Achse wählen' };
       }
       if (!this.rxPoint) {
         this.rxPoint = p;
-        return { done: false, hint: 'ELLIPSE: pick Y axis distance' };
+        return { done: false, hint: 'ELLIPSE: Abstand der Y-Achse wählen' };
       }
       const rx = Math.hypot(this.rxPoint.x - this.c.x, this.rxPoint.y - this.c.y);
       const rotation = Math.atan2(this.rxPoint.y - this.c.y, this.rxPoint.x - this.c.x);

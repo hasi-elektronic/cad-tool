@@ -28,10 +28,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({ cursorX, cursorY, zoom, sn
       <span>ZOOM <span className="text-ink">{(zoom * 100).toFixed(0)}%</span></span>
       <span className="opacity-50">|</span>
       <Toggle on={ortho} onClick={() => store.setUI({ ortho: !ortho })}>ORTHO</Toggle>
-      <Toggle on={snapEnabled} onClick={() => store.setUI({ snap: !snapEnabled })}>SNAP</Toggle>
-      <Toggle on={showGrid} onClick={() => store.setUI({ showGrid: !showGrid })}>GRID</Toggle>
+      <Toggle on={snapEnabled} onClick={() => store.setUI({ snap: !snapEnabled })}>FANG</Toggle>
+      <Toggle on={showGrid} onClick={() => store.setUI({ showGrid: !showGrid })}>RASTER</Toggle>
       <span className="opacity-50">|</span>
-      <span>GRID
+      <span>RASTER
         <select
           value={gridMinor}
           onChange={(e) => store.setUI({ gridMinor: parseFloat(e.target.value) })}
@@ -41,13 +41,24 @@ export const StatusBar: React.FC<StatusBarProps> = ({ cursorX, cursorY, zoom, sn
         </select>
       </span>
       <span className="opacity-50">|</span>
-      <span>LAYER <span style={{ color: activeLayer?.color }} className="font-bold">{activeLayer?.name}</span></span>
+      <span>EBENE <span style={{ color: activeLayer?.color }} className="font-bold">{activeLayer?.name}</span></span>
       {snap && (
-        <span className="ml-auto text-brand uppercase">SNAP: {snap.type}</span>
+        <span className="ml-auto text-brand uppercase">FANG: {snapTypeDe(snap.type)}</span>
       )}
     </div>
   );
 };
+
+function snapTypeDe(t: SnapResult['type']): string {
+  switch (t) {
+    case 'endpoint': return 'Endpunkt';
+    case 'midpoint': return 'Mittelpunkt';
+    case 'center': return 'Zentrum';
+    case 'intersection': return 'Schnittpunkt';
+    case 'grid': return 'Raster';
+    case 'quadrant': return 'Quadrant';
+  }
+}
 
 const Toggle: React.FC<{ on: boolean; onClick: () => void; children: React.ReactNode }> = ({ on, onClick, children }) => (
   <button

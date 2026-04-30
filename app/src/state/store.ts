@@ -27,9 +27,9 @@ export interface AppState {
 type Listener = () => void;
 
 const DEFAULT_LAYERS: Layer[] = [
-  { id: 'L_0', name: '0', color: '#33d17a', visible: true, locked: false },
-  { id: 'L_construction', name: 'Construction', color: '#9aa0b4', visible: true, locked: false },
-  { id: 'L_dimensions', name: 'Dimensions', color: '#ffd166', visible: true, locked: false },
+  { id: 'L_0', name: '0', color: '#ffffff', visible: true, locked: false },
+  { id: 'L_construction', name: 'Hilfslinien', color: '#9aa0b4', visible: true, locked: false },
+  { id: 'L_dimensions', name: 'Bemaßungen', color: '#ff3b30', visible: true, locked: false },
 ];
 
 const initialState = (): AppState => ({

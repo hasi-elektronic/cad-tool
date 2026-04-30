@@ -4,7 +4,7 @@ import type { Tool, ToolContext, ToolEvent, ToolResult } from './types';
 
 export class PolylineTool implements Tool {
   id = 'polyline';
-  hint = 'POLYLINE: pick first point';
+  hint = 'POLYLINIE: ersten Punkt wählen';
   private points: Point[] = [];
 
   step(ev: ToolEvent, ctx: ToolContext): ToolResult {
@@ -31,7 +31,7 @@ export class PolylineTool implements Tool {
     if (ev.type === 'click' || ev.type === 'value') {
       const p = ev.point ?? ctx.cursor;
       this.points.push(p);
-      return { done: false, hint: `POLYLINE: pick next point (Enter to finish, ESC to cancel) — ${this.points.length} pts` };
+      return { done: false, hint: `POLYLINIE: nächsten Punkt (Enter beendet, ESC bricht ab) — ${this.points.length} Pkt` };
     }
     return { done: false };
   }

@@ -41,7 +41,7 @@ export const CommandLine: React.FC<CommandLineProps> = ({ api, hint, onCommand }
 
   return (
     <div className="bg-canvas border-t border-line px-3 py-1.5 flex items-center gap-2 h-9">
-      <span className="text-brand text-[11px] tracking-widest font-bold">CMD</span>
+      <span className="text-brand text-[11px] tracking-widest font-bold">BEFEHL</span>
       <span className="text-muted text-[10px] truncate max-w-[40%]">{hint}</span>
       <span className="text-muted text-[10px]">›</span>
       <input
@@ -75,7 +75,7 @@ export const CommandLine: React.FC<CommandLineProps> = ({ api, hint, onCommand }
             }
           }
         }}
-        placeholder="x,y  or  @dx,dy  or  distance  or  command (line, circle, ...)"
+        placeholder="x,y  oder  @dx,dy  oder  Abstand  oder  Befehl (linie, kreis, ...)"
         className="flex-1 bg-transparent text-ink font-mono text-[12px] outline-none"
       />
     </div>
@@ -85,19 +85,26 @@ export const CommandLine: React.FC<CommandLineProps> = ({ api, hint, onCommand }
 function handleAsCommand(v: string, onCommand: (raw: string) => void): boolean {
   const aliases: Record<string, string> = {
     line: 'tool:line',
+    linie: 'tool:line',
     l: 'tool:line',
     circle: 'tool:circle',
+    kreis: 'tool:circle',
     c: 'tool:circle',
     rect: 'tool:rect',
     rectangle: 'tool:rect',
+    rechteck: 'tool:rect',
     r: 'tool:rect',
     arc: 'tool:arc',
+    bogen: 'tool:arc',
     a: 'tool:arc',
     polyline: 'tool:polyline',
+    polylinie: 'tool:polyline',
     pline: 'tool:polyline',
     p: 'tool:polyline',
     dim: 'tool:dimension',
     dimension: 'tool:dimension',
+    bemassung: 'tool:dimension',
+    bemaßung: 'tool:dimension',
     dimaligned: 'tool:dimension',
     d: 'tool:dimension',
     dimh: 'tool:dim_horizontal',
@@ -121,24 +128,40 @@ function handleAsCommand(v: string, onCommand: (raw: string) => void): boolean {
     dimangular: 'tool:dim_angular',
     angular: 'tool:dim_angular',
     select: 'tool:select',
+    auswählen: 'tool:select',
+    auswaehlen: 'tool:select',
     v: 'tool:select',
     move: 'tool:move',
+    verschieben: 'tool:move',
     copy: 'tool:copy',
+    kopieren: 'tool:copy',
     mirror: 'tool:mirror',
+    spiegeln: 'tool:mirror',
     offset: 'tool:offset',
+    versatz: 'tool:offset',
     fillet: 'tool:fillet',
+    abrunden: 'tool:fillet',
     trim: 'tool:trim',
+    stutzen: 'tool:trim',
     ellipse: 'tool:ellipse',
     e: 'tool:ellipse',
     save: 'export',
+    speichern: 'export',
     export: 'export',
     import: 'import',
+    öffnen: 'import',
+    oeffnen: 'import',
     undo: 'undo',
+    rückgängig: 'undo',
+    rueckgaengig: 'undo',
     u: 'undo',
     redo: 'redo',
+    wiederherstellen: 'redo',
     fit: 'fit',
+    anpassen: 'fit',
     zf: 'fit',
     help: 'help',
+    hilfe: 'help',
     '?': 'help',
   };
   const cmd = aliases[v.toLowerCase()];

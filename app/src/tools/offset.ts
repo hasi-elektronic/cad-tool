@@ -80,7 +80,7 @@ interface OffsetOpts {
 
 export class OffsetTool implements Tool {
   id = 'offset';
-  hint = 'OFFSET: type distance, then click side';
+  hint = 'VERSATZ: Abstand eingeben, dann Seite klicken';
   private dist: number | null = null;
   private opts: OffsetOpts;
 
@@ -94,13 +94,13 @@ export class OffsetTool implements Tool {
       const v = parseFloat(ev.value || '');
       if (isFinite(v) && v > 0) {
         this.dist = v;
-        return { done: false, hint: `OFFSET (${v}): click side to offset towards` };
+        return { done: false, hint: `VERSATZ (${v}): Seite anklicken` };
       }
       return { done: false };
     }
     if (ev.type === 'click') {
       if (this.dist == null) {
-        return { done: false, hint: 'OFFSET: type a positive distance' };
+        return { done: false, hint: 'VERSATZ: zuerst positiven Abstand eingeben' };
       }
       const out: Entity[] = [];
       const click = ev.point ?? ctx.cursor;

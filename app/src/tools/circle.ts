@@ -5,7 +5,7 @@ import type { Tool, ToolContext, ToolEvent, ToolResult } from './types';
 
 export class CircleTool implements Tool {
   id = 'circle';
-  hint = 'CIRCLE: pick center';
+  hint = 'KREIS: Mittelpunkt wählen';
   private center: Point | null = null;
 
   step(ev: ToolEvent, ctx: ToolContext): ToolResult {
@@ -17,7 +17,7 @@ export class CircleTool implements Tool {
       const p = ev.point ?? ctx.cursor;
       if (!this.center) {
         this.center = p;
-        return { done: false, hint: 'CIRCLE: pick radius point or type radius' };
+        return { done: false, hint: 'KREIS: Radius-Punkt wählen oder Radius eingeben' };
       }
       const r = distance(this.center, p);
       if (r < 1e-6) return { done: false };
@@ -29,7 +29,7 @@ export class CircleTool implements Tool {
       if (!this.center) {
         if (ev.point) {
           this.center = ev.point;
-          return { done: false, hint: 'CIRCLE: pick radius point or type radius' };
+          return { done: false, hint: 'KREIS: Radius-Punkt wählen oder Radius eingeben' };
         }
         return { done: false };
       }
