@@ -5,7 +5,12 @@ import { CircleTool } from './circle';
 import { RectTool } from './rect';
 import { ArcTool } from './arc';
 import { PolylineTool } from './polyline';
-import { DimensionTool } from './dimension';
+import {
+  DimensionTool,
+  LinearDimensionTool,
+  RadialDimensionTool,
+  AngularDimensionTool,
+} from './dimension';
 import { EllipseTool } from './ellipse';
 import { SelectTool } from './select';
 import { MoveTool } from './move';
@@ -36,6 +41,16 @@ export function createTool(id: ToolId, ctx: ToolFactoryCtx): Tool {
       return new PolylineTool();
     case 'dimension':
       return new DimensionTool();
+    case 'dim_horizontal':
+      return new LinearDimensionTool('horizontal');
+    case 'dim_vertical':
+      return new LinearDimensionTool('vertical');
+    case 'dim_radius':
+      return new RadialDimensionTool('radius');
+    case 'dim_diameter':
+      return new RadialDimensionTool('diameter');
+    case 'dim_angular':
+      return new AngularDimensionTool();
     case 'ellipse':
       return new EllipseTool();
     case 'move':

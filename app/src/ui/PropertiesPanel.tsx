@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { store, useStore } from '../state/useStore';
-import type { Entity, Point } from '../core/types';
+import type { DimensionEntity, DimensionKind, Entity, Point } from '../core/types';
 import { distance, formatNumber } from '../core/math';
 
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -126,11 +126,7 @@ const SingleEntityProps: React.FC<{
               <span className="text-ink text-[11px]">{formatNumber(distance(entity.a, entity.b), 3)} mm</span>
             </Row>
           )}
-          {entity.type === 'dimension' && (
-            <Row label="Offset">
-              <NumInput value={entity.offset} onCommit={(offset) => update({ offset } as any)} suffix="mm" />
-            </Row>
-          )}
+          {entity.type === 'dimension' && <DimensionExtras entity={entity} update={update} />}
         </>
       )}
       {entity.type === 'circle' && (
@@ -184,6 +180,7 @@ const SingleEntityProps: React.FC<{
       {entity.type === 'polyline' && (
         <Row label="Points"><span className="text-ink text-[11px]">{entity.points.length}</span></Row>
       )}
+      {/* dimension extras live alongside the A/B/offset block above */}
       {entity.type === 'text' && (
         <>
           <PointInput label="Pos" p={entity.pos} onCommit={(pos) => update({ pos } as any)} />
@@ -200,5 +197,87 @@ const SingleEntityProps: React.FC<{
         </>
       )}
     </div>
+  );
+};
+
+const DIM_KINDS: { id: DimensionKind; label: string }[] = [
+  { id: 'aligned', label: 'Aligned' },
+  { id: 'horizontal', label: 'Horizontal' },
+  { id: 'vertical', label: 'Vertical' },
+  { id: 'radius', label: 'Radius' },
+  { id: 'diameter', label: 'Diameter' },
+  { id: 'angular', label: 'Angular' },
+];
+
+const DimensionExtras: React.FC<{
+  entity: DimensionEntity;
+  update: (patch: Partial<Entity>) => void;
+}> = ({ entity, update }) => {
+  const kind = entity.kind ?? 'aligned';
+  const isAngular = kind === 'angular';
+  return (
+    <>
+      <Row label="Kind">
+        <select
+          value={kind}
+          onChange={(e) => update({ kind: e.target.value as DimensionKind } as any)}
+          className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
+        >
+          {DIM_KINDS.map((k) => (
+            <option key={k.id} value={k.id}>{k.label}</option>
+          ))}
+        </select>
+      </Row>
+      <Row label={isAngular ? 'Arc r' : kind === 'radius' || kind === 'diameter' ? 'Radius' : 'Offset'}>
+        <NumInput
+          value={entity.offset}
+          onCommit={(offset) => update({ offset } as any)}
+          suffix="mm"
+        />
+      </Row>
+      {isAngular && entity.c && (
+        <PointInput label="Vertex" p={entity.c} onCommit={(c) => update({ c } as any)} />
+      )}
+      <Row label="Arrow">
+        <select
+          value={entity.arrow ?? 'tick'}
+          onChange={(e) => update({ arrow: e.target.value as 'tick' | 'arrow' } as any)}
+          className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
+        >
+          <option value="tick">Tick</option>
+          <option value="arrow">Arrow</option>
+        </select>
+      </Row>
+      <Row label="Decimals">
+        <NumInput
+          value={entity.precision ?? 2}
+          onCommit={(precision) => update({ precision: Math.max(0, Math.round(precision)) } as any)}
+        />
+      </Row>
+      <Row label="Prefix">
+        <input
+          value={entity.prefix ?? ''}
+          onChange={(e) => update({ prefix: e.target.value } as any)}
+          placeholder={kind === 'diameter' ? 'Ø' : kind === 'radius' ? 'R' : ''}
+          className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
+        />
+      </Row>
+      <Row label="Suffix">
+        <input
+          value={entity.suffix ?? ''}
+          onChange={(e) => update({ suffix: e.target.value } as any)}
+          placeholder="±0.1"
+          className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
+        />
+      </Row>
+      <Row label="Override">
+        <input
+          value={entity.override ?? ''}
+          onChange={(e) => update({ override: e.target.value } as any)}
+          placeholder="(measured)"
+          className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
+        />
+      </Row>
+    </>
   );
 };

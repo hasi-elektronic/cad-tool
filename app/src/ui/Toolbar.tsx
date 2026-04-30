@@ -48,9 +48,37 @@ const TOOLS: ToolButtonSpec[] = [
       <ellipse cx="12" cy="12" rx="9" ry="5" stroke="currentColor" strokeWidth="2" fill="none" />
     </svg>
   ) },
-  { id: 'dimension', label: 'Dimension', short: 'D', group: 'draw', icon: (
+  { id: 'dimension', label: 'Dim · Aligned', short: 'D', group: 'draw', icon: (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
+      <path stroke="currentColor" strokeWidth="2" fill="none" d="M5 5l14 14M3 9l4-4M17 21l4-4" />
+    </svg>
+  ) },
+  { id: 'dim_horizontal', label: 'Dim · Horizontal', short: 'DH', group: 'draw', icon: (
     <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
       <path stroke="currentColor" strokeWidth="2" fill="none" d="M3 8v8M21 8v8M3 12h18" />
+    </svg>
+  ) },
+  { id: 'dim_vertical', label: 'Dim · Vertical', short: 'DV', group: 'draw', icon: (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
+      <path stroke="currentColor" strokeWidth="2" fill="none" d="M8 3h8M8 21h8M12 3v18" />
+    </svg>
+  ) },
+  { id: 'dim_radius', label: 'Dim · Radius', short: 'DR', group: 'draw', icon: (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
+      <circle cx="9" cy="13" r="6" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path stroke="currentColor" strokeWidth="2" fill="none" d="M9 13l11-7" />
+    </svg>
+  ) },
+  { id: 'dim_diameter', label: 'Dim · Diameter', short: 'DØ', group: 'draw', icon: (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
+      <circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path stroke="currentColor" strokeWidth="2" fill="none" d="M5 5l14 14" />
+    </svg>
+  ) },
+  { id: 'dim_angular', label: 'Dim · Angular', short: 'DA', group: 'draw', icon: (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
+      <path stroke="currentColor" strokeWidth="2" fill="none" d="M4 20l16 0M4 20l10-12" />
+      <path stroke="currentColor" strokeWidth="1.5" fill="none" d="M11 20a6 6 0 0 0 0-7" />
     </svg>
   ) },
   { id: 'fillet', label: 'Fillet', short: 'F', group: 'edit', icon: (

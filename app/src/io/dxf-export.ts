@@ -1,5 +1,5 @@
 import type { DocState } from '../state/store';
-import type { Entity } from '../core/types';
+import type { DimensionEntity, Entity, Point } from '../core/types';
 import { distance, formatNumber } from '../core/math';
 
 // AutoCAD R2010 (AC1024). We emit just enough HEADER + TABLES to satisfy strict
@@ -167,35 +167,7 @@ function writeEntity(w: W, e: Entity, layerName: string) {
       w(50, fmt((e.rotation * 180) / Math.PI));
       return;
     case 'dimension': {
-      // Emit dimension as concrete geometry: extension lines + dimension line + ticks + TEXT.
-      const dx = e.b.x - e.a.x;
-      const dy = e.b.y - e.a.y;
-      const L = Math.hypot(dx, dy) || 1;
-      const nx = -dy / L;
-      const ny = dx / L;
-      const off = e.offset;
-      const aD = { x: e.a.x + nx * off, y: e.a.y + ny * off };
-      const bD = { x: e.b.x + nx * off, y: e.b.y + ny * off };
-      // Extension lines
-      writeEntity(w, { id: '', type: 'line', layerId: '', a: e.a, b: aD } as Entity, layerName);
-      writeEntity(w, { id: '', type: 'line', layerId: '', a: e.b, b: bD } as Entity, layerName);
-      // Dimension line
-      writeEntity(w, { id: '', type: 'line', layerId: '', a: aD, b: bD } as Entity, layerName);
-      // Ticks
-      const tx = (dx / L) * 2;
-      const ty = (dy / L) * 2;
-      writeEntity(w, { id: '', type: 'line', layerId: '', a: { x: aD.x - tx - nx * 2, y: aD.y - ty - ny * 2 }, b: { x: aD.x + tx + nx * 2, y: aD.y + ty + ny * 2 } } as Entity, layerName);
-      writeEntity(w, { id: '', type: 'line', layerId: '', a: { x: bD.x - tx - nx * 2, y: bD.y - ty - ny * 2 }, b: { x: bD.x + tx + nx * 2, y: bD.y + ty + ny * 2 } } as Entity, layerName);
-      // Text
-      const text = formatNumber(distance(e.a, e.b), 2);
-      const mid = { x: (aD.x + bD.x) / 2 + nx * 2, y: (aD.y + bD.y) / 2 + ny * 2 };
-      const ang = Math.atan2(dy, dx);
-      w(0, 'TEXT');
-      w(8, layerName);
-      w(10, fmt(mid.x)); w(20, fmt(mid.y)); w(30, '0.0');
-      w(40, '3.0');
-      w(1, text);
-      w(50, fmt((ang * 180) / Math.PI));
+      writeDimension(w, e, layerName);
       return;
     }
   }
@@ -204,6 +176,140 @@ function writeEntity(w: W, e: Entity, layerName: string) {
 function fmt(n: number): string {
   if (!isFinite(n)) return '0.0';
   return n.toFixed(6);
+}
+
+function dimText(d: DimensionEntity, value: number, isAngle = false): string {
+  if (d.override && d.override.length > 0) return d.override;
+  const num = formatNumber(value, d.precision ?? 2);
+  const core = isAngle ? `${num}°` : num;
+  return `${d.prefix ?? ''}${core}${d.suffix ?? ''}`;
+}
+
+function writeDimension(w: W, d: DimensionEntity, layerName: string): void {
+  const kind = d.kind ?? 'aligned';
+  if (kind === 'aligned') return writeLinearDim(w, d, layerName, 'aligned');
+  if (kind === 'horizontal') return writeLinearDim(w, d, layerName, 'horizontal');
+  if (kind === 'vertical') return writeLinearDim(w, d, layerName, 'vertical');
+  if (kind === 'radius' || kind === 'diameter') return writeRadialDim(w, d, layerName);
+  if (kind === 'angular') return writeAngularDim(w, d, layerName);
+}
+
+function writeLinearDim(
+  w: W,
+  d: DimensionEntity,
+  layerName: string,
+  kind: 'aligned' | 'horizontal' | 'vertical',
+): void {
+  const a = d.a;
+  const b = d.b;
+  let aD: Point;
+  let bD: Point;
+  let measured: number;
+  if (kind === 'horizontal') {
+    const lineY = (a.y + b.y) / 2 + d.offset;
+    aD = { x: a.x, y: lineY };
+    bD = { x: b.x, y: lineY };
+    measured = Math.abs(b.x - a.x);
+  } else if (kind === 'vertical') {
+    const lineX = (a.x + b.x) / 2 + d.offset;
+    aD = { x: lineX, y: a.y };
+    bD = { x: lineX, y: b.y };
+    measured = Math.abs(b.y - a.y);
+  } else {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const L = Math.hypot(dx, dy) || 1;
+    const nx = -dy / L;
+    const ny = dx / L;
+    aD = { x: a.x + nx * d.offset, y: a.y + ny * d.offset };
+    bD = { x: b.x + nx * d.offset, y: b.y + ny * d.offset };
+    measured = distance(a, b);
+  }
+  // Extension + dim lines.
+  emitLine(w, layerName, a, aD);
+  emitLine(w, layerName, b, bD);
+  emitLine(w, layerName, aD, bD);
+  // End ticks.
+  const dimDx = bD.x - aD.x;
+  const dimDy = bD.y - aD.y;
+  const L = Math.hypot(dimDx, dimDy) || 1;
+  const tx = (dimDx / L) * 2;
+  const ty = (dimDy / L) * 2;
+  const nx = -dimDy / L;
+  const ny = dimDx / L;
+  emitLine(w, layerName, { x: aD.x - tx - nx * 2, y: aD.y - ty - ny * 2 }, { x: aD.x + tx + nx * 2, y: aD.y + ty + ny * 2 });
+  emitLine(w, layerName, { x: bD.x - tx - nx * 2, y: bD.y - ty - ny * 2 }, { x: bD.x + tx + nx * 2, y: bD.y + ty + ny * 2 });
+  // Text.
+  const mid = { x: (aD.x + bD.x) / 2 + nx * 2, y: (aD.y + bD.y) / 2 + ny * 2 };
+  const ang = Math.atan2(dimDy, dimDx);
+  emitText(w, layerName, mid, dimText(d, measured), ang);
+}
+
+function writeRadialDim(w: W, d: DimensionEntity, layerName: string): void {
+  const c = d.a;
+  const tail = d.b;
+  const r = d.offset;
+  const dirx = tail.x - c.x;
+  const diry = tail.y - c.y;
+  const L = Math.hypot(dirx, diry) || 1;
+  const ux = dirx / L;
+  const uy = diry / L;
+  const onCircle = { x: c.x + ux * r, y: c.y + uy * r };
+  const opp = { x: c.x - ux * r, y: c.y - uy * r };
+  const isDia = (d.kind ?? 'aligned') === 'diameter';
+  if (isDia) emitLine(w, layerName, opp, onCircle);
+  else emitLine(w, layerName, c, onCircle);
+  if (L > r) emitLine(w, layerName, onCircle, tail);
+  const measure = isDia ? r * 2 : r;
+  const fallback = isDia ? 'Ø' : 'R';
+  const txt = (d.override && d.override.length > 0)
+    ? d.override
+    : `${d.prefix ?? fallback}${formatNumber(measure, d.precision ?? 2)}${d.suffix ?? ''}`;
+  emitText(w, layerName, { x: tail.x + ux * 2, y: tail.y + uy * 2 }, txt, 0);
+}
+
+function writeAngularDim(w: W, d: DimensionEntity, layerName: string): void {
+  if (!d.c) return;
+  const v = d.c;
+  const r = d.offset;
+  const angA = Math.atan2(d.a.y - v.y, d.a.x - v.x);
+  const angB = Math.atan2(d.b.y - v.y, d.b.x - v.x);
+  let delta = angB - angA;
+  while (delta <= -Math.PI) delta += 2 * Math.PI;
+  while (delta > Math.PI) delta -= 2 * Math.PI;
+  const start = delta >= 0 ? angA : angB;
+  const end = delta >= 0 ? angB : angA;
+  // Extension legs from vertex out to arc.
+  emitLine(w, layerName, v, { x: v.x + Math.cos(angA) * (r + 4), y: v.y + Math.sin(angA) * (r + 4) });
+  emitLine(w, layerName, v, { x: v.x + Math.cos(angB) * (r + 4), y: v.y + Math.sin(angB) * (r + 4) });
+  // Arc as ARC entity (CCW from start to end).
+  w(0, 'ARC');
+  w(8, layerName);
+  w(10, fmt(v.x)); w(20, fmt(v.y)); w(30, '0.0');
+  w(40, fmt(r));
+  w(50, fmt((start * 180) / Math.PI));
+  w(51, fmt((end * 180) / Math.PI));
+  // Text at mid-angle.
+  const mid = (angA + angB) / 2;
+  const tx = v.x + Math.cos(mid) * (r + 4);
+  const ty = v.y + Math.sin(mid) * (r + 4);
+  emitText(w, layerName, { x: tx, y: ty }, dimText(d, Math.abs(delta) * (180 / Math.PI), true), 0);
+}
+
+function emitLine(w: W, layerName: string, a: Point, b: Point): void {
+  w(0, 'LINE');
+  w(8, layerName);
+  w(10, fmt(a.x)); w(20, fmt(a.y)); w(30, '0.0');
+  w(11, fmt(b.x)); w(21, fmt(b.y)); w(31, '0.0');
+}
+
+function emitText(w: W, layerName: string, pos: Point, text: string, angRad: number): void {
+  w(0, 'TEXT');
+  w(8, layerName);
+  w(10, fmt(pos.x)); w(20, fmt(pos.y)); w(30, '0.0');
+  w(40, '3.0');
+  w(1, text);
+  w(50, fmt((angRad * 180) / Math.PI));
 }
 
 export function downloadDXF(doc: DocState, filename = 'hasi-cad-export.dxf'): void {
