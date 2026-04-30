@@ -12,7 +12,7 @@ interface FilletOpts {
 // User: type R (radius), then click first line, then second line.
 export class FilletTool implements Tool {
   id = 'fillet';
-  hint = 'FILLET: type radius, then pick first line';
+  hint = 'ABRUNDEN: Radius eingeben, dann erste Linie wählen';
   private radius: number | null = null;
   private first: LineEntity | null = null;
   private opts: FilletOpts;
@@ -27,18 +27,18 @@ export class FilletTool implements Tool {
       const r = parseFloat(ev.value || '');
       if (isFinite(r) && r > 0) {
         this.radius = r;
-        return { done: false, hint: `FILLET (R=${r}): pick first line` };
+        return { done: false, hint: `ABRUNDEN (R=${r}): erste Linie wählen` };
       }
       return { done: false };
     }
     if (ev.type === 'click') {
-      if (this.radius == null) return { done: false, hint: 'FILLET: type a positive radius first' };
+      if (this.radius == null) return { done: false, hint: 'ABRUNDEN: zuerst positiven Radius eingeben' };
       const click = ev.point ?? ctx.cursor;
       const line = this.findLineNear(click, ctx);
       if (!line) return { done: false };
       if (!this.first) {
         this.first = line;
-        return { done: false, hint: `FILLET (R=${this.radius}): pick second line` };
+        return { done: false, hint: `ABRUNDEN (R=${this.radius}): zweite Linie wählen` };
       }
       if (line.id === this.first.id) return { done: false };
       const result = computeFillet(this.first, line, this.radius);

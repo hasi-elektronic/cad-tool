@@ -52,7 +52,7 @@ interface MirrorOpts {
 
 export class MirrorTool implements Tool {
   id = 'mirror';
-  hint = 'MIRROR: pick first axis point';
+  hint = 'SPIEGELN: ersten Achsenpunkt wählen';
   private a: Point | null = null;
   private opts: MirrorOpts;
 
@@ -66,7 +66,7 @@ export class MirrorTool implements Tool {
       const p = ev.point ?? ctx.cursor;
       if (!this.a) {
         this.a = p;
-        return { done: false, hint: 'MIRROR: pick second axis point' };
+        return { done: false, hint: 'SPIEGELN: zweiten Achsenpunkt wählen' };
       }
       const out: Entity[] = [];
       const remove: string[] = [];

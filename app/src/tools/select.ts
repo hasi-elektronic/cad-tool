@@ -4,7 +4,7 @@ import type { Tool, ToolContext, ToolEvent, ToolResult } from './types';
 // is essentially a no-op. It exists so the tool dispatcher has a uniform interface.
 export class SelectTool implements Tool {
   id = 'select';
-  hint = 'SELECT: click an entity (Del to remove)';
+  hint = 'AUSWÄHLEN: Objekt anklicken (Entf zum Löschen)';
   step(_ev: ToolEvent, _ctx: ToolContext): ToolResult {
     return { done: false };
   }

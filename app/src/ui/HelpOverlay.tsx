@@ -5,37 +5,38 @@ interface Props {
 }
 
 const ROWS: [string, string][] = [
-  ['L', 'Line'],
-  ['C', 'Circle'],
-  ['R', 'Rectangle'],
-  ['A', 'Arc (3-point)'],
-  ['P', 'Polyline'],
-  ['D', 'Dimension'],
+  ['L', 'Linie'],
+  ['C', 'Kreis'],
+  ['R', 'Rechteck'],
+  ['A', 'Bogen (3 Punkte)'],
+  ['P', 'Polylinie'],
+  ['D', 'Bemaßung (ausgerichtet)'],
   ['E', 'Ellipse'],
-  ['V', 'Select'],
-  ['F', 'Fillet (also: Zoom Fit when nothing in progress)'],
-  ['T', 'Trim'],
-  ['G', 'Toggle grid'],
-  ['S', 'Toggle snap'],
-  ['O', 'Toggle ortho'],
-  ['Del', 'Delete selected'],
-  ['Ctrl+Z / Ctrl+Y', 'Undo / Redo'],
-  ['Ctrl+S', 'Save (DXF export)'],
-  ['ESC', 'Cancel current operation'],
-  ['Enter', 'Finish polyline / submit value'],
-  ['Space', 'Repeat last command'],
-  ['?', 'This help'],
-  ['Mouse wheel', 'Zoom (towards cursor)'],
-  ['Middle drag / Alt + drag', 'Pan'],
+  ['V', 'Auswählen'],
+  ['F', 'Abrunden (oder Zoom anpassen wenn frei)'],
+  ['T', 'Stutzen'],
+  ['G', 'Raster ein/aus'],
+  ['S', 'Fang ein/aus'],
+  ['O', 'Ortho ein/aus'],
+  ['Entf', 'Auswahl löschen'],
+  ['Strg+Z / Strg+Y', 'Rückgängig / Wiederherstellen'],
+  ['Strg+S', 'Speichern (DXF)'],
+  ['ESC', 'Aktion abbrechen'],
+  ['Enter', 'Polylinie beenden / Wert übernehmen'],
+  ['Leer', 'Letzten Befehl wiederholen'],
+  ['?', 'Diese Hilfe'],
+  ['Mausrad', 'Zoom (zum Cursor)'],
+  ['Mitte / Alt + Ziehen', 'Verschieben (Pan)'],
 ];
 
 const PROMPTS: [string, string][] = [
-  ['100,50', 'Absolute point at (100, 50)'],
-  ['@30,0', 'Relative point: 30 right of last'],
-  ['25', 'During Circle/Offset/Fillet: numeric distance'],
-  ['line', 'Switch to a tool by name'],
-  ['undo / redo', 'History'],
-  ['fit', 'Zoom to fit drawing'],
+  ['100,50', 'Absoluter Punkt (100, 50)'],
+  ['@30,0', 'Relativer Punkt: 30 nach rechts'],
+  ['25', 'Beim Kreis/Versatz/Abrunden: numerischer Abstand'],
+  ['linie / kreis / kreis...', 'Werkzeug nach Name aufrufen'],
+  ['dimh / dimv / dimr / dimd / dima', 'Bemaßung horizontal/vertikal/Radius/Durchm./Winkel'],
+  ['rückgängig / wiederherstellen', 'Verlauf'],
+  ['anpassen', 'Zoom auf Zeichnung anpassen'],
 ];
 
 export const HelpOverlay: React.FC<Props> = ({ onClose }) => (
@@ -50,7 +51,7 @@ export const HelpOverlay: React.FC<Props> = ({ onClose }) => (
       <div className="px-5 py-4 border-b border-line flex items-center justify-between">
         <div>
           <div className="text-brand text-base font-bold tracking-widest">HASI CAD</div>
-          <div className="text-muted text-[10px] tracking-widest uppercase">Keyboard Reference</div>
+          <div className="text-muted text-[10px] tracking-widest uppercase">Tastatur-Referenz</div>
         </div>
         <button
           onClick={onClose}
@@ -59,7 +60,7 @@ export const HelpOverlay: React.FC<Props> = ({ onClose }) => (
       </div>
       <div className="grid grid-cols-2 gap-x-6 px-5 py-4">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Shortcuts</div>
+          <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Tastenkürzel</div>
           {ROWS.map(([k, v]) => (
             <div key={k} className="flex items-center gap-3 py-1 border-b border-line/50">
               <span className="text-brand font-bold text-[11px] w-32">{k}</span>
@@ -68,7 +69,7 @@ export const HelpOverlay: React.FC<Props> = ({ onClose }) => (
           ))}
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Command line examples</div>
+          <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Befehlszeile · Beispiele</div>
           {PROMPTS.map(([k, v]) => (
             <div key={k} className="flex items-center gap-3 py-1 border-b border-line/50">
               <span className="text-brand font-bold text-[11px] w-32">{k}</span>
@@ -76,8 +77,8 @@ export const HelpOverlay: React.FC<Props> = ({ onClose }) => (
             </div>
           ))}
           <div className="mt-4 text-muted text-[10px] leading-relaxed">
-            Snap priority: endpoint &gt; midpoint/quadrant &gt; center &gt; intersection &gt; grid.
-            Yellow square = endpoint, triangle = midpoint, circle = center, ✕ = intersection.
+            Fang-Priorität: Endpunkt &gt; Mittelpunkt/Quadrant &gt; Zentrum &gt; Schnittpunkt &gt; Raster.
+            Gelbes Quadrat = Endpunkt, Dreieck = Mittelpunkt, Kreis = Zentrum, ✕ = Schnittpunkt.
           </div>
         </div>
       </div>

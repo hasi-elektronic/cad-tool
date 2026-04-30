@@ -23,6 +23,36 @@ export const App: React.FC = () => {
   const showHelp = useStore((s) => s.ui.showHelp);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // OS file-association handler: when launched from "Open with → HASI CAD",
+  // the browser delivers FileSystemFileHandles via launchQueue. Pull each one
+  // through the existing DXF importer.
+  useEffect(() => {
+    interface LaunchParams { files?: FileSystemFileHandle[] }
+    const lq = (window as unknown as {
+      launchQueue?: {
+        setConsumer: (cb: (p: LaunchParams) => void | Promise<void>) => void;
+      };
+    }).launchQueue;
+    if (!lq) return;
+    lq.setConsumer(async (params) => {
+      if (!params.files || params.files.length === 0) return;
+      try {
+        for (const handle of params.files) {
+          const file = await handle.getFile();
+          const result = await importDXFFromFile(file);
+          const existing = new Set(store.get().doc.layers.map((l) => l.name));
+          for (const layer of result.layers) {
+            if (!existing.has(layer.name)) store.addLayer(layer);
+          }
+          store.addEntities(result.entities);
+        }
+        apiRef.current?.zoomFit();
+      } catch (err) {
+        alert('DXF konnte nicht gelesen werden: ' + (err as Error).message);
+      }
+    });
+  }, []);
+
   const registerCommand = useCallback((api: CommandAPI) => {
     apiRef.current = api;
   }, []);
@@ -32,7 +62,7 @@ export const App: React.FC = () => {
       const id = cmd.slice(5) as ToolId;
       store.setTool(id);
     } else if (cmd === 'export') {
-      const name = prompt('Filename:', 'hasi-cad-export.dxf') ?? 'hasi-cad-export.dxf';
+      const name = prompt('Dateiname:', 'hasi-cad-zeichnung.dxf') ?? 'hasi-cad-zeichnung.dxf';
       downloadDXF(store.get().doc, name);
     } else if (cmd === 'import') {
       fileInputRef.current?.click();
@@ -186,7 +216,7 @@ export const App: React.FC = () => {
             store.addEntities(result.entities);
             apiRef.current?.zoomFit();
           } catch (err) {
-            alert('Failed to read DXF: ' + (err as Error).message);
+            alert('DXF konnte nicht gelesen werden: ' + (err as Error).message);
           }
           (e.target as HTMLInputElement).value = '';
         }}

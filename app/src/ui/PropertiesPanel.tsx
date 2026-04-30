@@ -5,7 +5,7 @@ import { distance, formatNumber } from '../core/math';
 
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="flex items-center gap-2 px-3 py-1.5 border-b border-line">
-    <div className="w-16 text-[10px] uppercase tracking-widest text-muted">{label}</div>
+    <div className="w-20 text-[10px] uppercase tracking-widest text-muted">{label}</div>
     <div className="flex-1 min-w-0">{children}</div>
   </div>
 );
@@ -60,9 +60,9 @@ export const PropertiesPanel: React.FC = () => {
       <button
         onClick={() => setCollapsed(false)}
         className="bg-panel border-l border-line w-7 hover:bg-panel2 text-muted hover:text-brand text-[9px] tracking-widest"
-        title="Show Properties"
+        title="Eigenschaften anzeigen"
       >
-        P<br/>R<br/>O<br/>P
+        E<br/>I<br/>G<br/>.
       </button>
     );
   }
@@ -72,7 +72,7 @@ export const PropertiesPanel: React.FC = () => {
   return (
     <aside className="bg-panel border-l border-line w-64 flex flex-col select-text">
       <div className="px-3 py-2 flex items-center justify-between border-b border-line">
-        <div className="text-[10px] font-bold tracking-widest text-muted uppercase">Properties</div>
+        <div className="text-[10px] font-bold tracking-widest text-muted uppercase">Eigenschaften</div>
         <button
           onClick={() => setCollapsed(true)}
           className="text-muted hover:text-brand hover:bg-panel2 px-1.5 rounded text-sm leading-none"
@@ -82,12 +82,12 @@ export const PropertiesPanel: React.FC = () => {
       <div className="flex-1 overflow-y-auto scrollbar">
         {selected.length === 0 && (
           <div className="text-muted text-[10px] px-3 py-3 italic">
-            No selection. Click an entity with the Select tool (V).
+            Keine Auswahl. Mit dem Auswählen-Werkzeug (V) klicken.
           </div>
         )}
         {selected.length === 1 && <SingleEntityProps entity={selected[0]} layers={layers} />}
         {selected.length > 1 && (
-          <div className="text-muted text-[11px] px-3 py-3">{selected.length} entities selected</div>
+          <div className="text-muted text-[11px] px-3 py-3">{selected.length} Objekte ausgewählt</div>
         )}
       </div>
     </aside>
@@ -102,10 +102,10 @@ const SingleEntityProps: React.FC<{
 
   return (
     <div>
-      <Row label="Type">
-        <span className="text-brand text-[11px] uppercase tracking-widest">{entity.type}</span>
+      <Row label="Typ">
+        <span className="text-brand text-[11px] uppercase tracking-widest">{TYPE_DE[entity.type] ?? entity.type}</span>
       </Row>
-      <Row label="Layer">
+      <Row label="Ebene">
         <select
           value={entity.layerId}
           onChange={(e) => update({ layerId: e.target.value } as Partial<Entity>)}
@@ -122,7 +122,7 @@ const SingleEntityProps: React.FC<{
           <PointInput label="A" p={entity.a} onCommit={(a) => update({ a } as any)} />
           <PointInput label="B" p={entity.b} onCommit={(b) => update({ b } as any)} />
           {entity.type === 'line' && (
-            <Row label="Length">
+            <Row label="Länge">
               <span className="text-ink text-[11px]">{formatNumber(distance(entity.a, entity.b), 3)} mm</span>
             </Row>
           )}
@@ -131,7 +131,7 @@ const SingleEntityProps: React.FC<{
       )}
       {entity.type === 'circle' && (
         <>
-          <PointInput label="Center" p={entity.c} onCommit={(c) => update({ c } as any)} />
+          <PointInput label="Mittelp." p={entity.c} onCommit={(c) => update({ c } as any)} />
           <Row label="Radius">
             <NumInput value={entity.r} onCommit={(r) => update({ r } as any)} suffix="mm" />
           </Row>
@@ -139,18 +139,18 @@ const SingleEntityProps: React.FC<{
       )}
       {entity.type === 'arc' && (
         <>
-          <PointInput label="Center" p={entity.c} onCommit={(c) => update({ c } as any)} />
+          <PointInput label="Mittelp." p={entity.c} onCommit={(c) => update({ c } as any)} />
           <Row label="Radius">
             <NumInput value={entity.r} onCommit={(r) => update({ r } as any)} suffix="mm" />
           </Row>
-          <Row label="Start ∠">
+          <Row label="Anfang ∠">
             <NumInput
               value={(entity.startAngle * 180) / Math.PI}
               onCommit={(deg) => update({ startAngle: (deg * Math.PI) / 180 } as any)}
               suffix="°"
             />
           </Row>
-          <Row label="End ∠">
+          <Row label="Ende ∠">
             <NumInput
               value={(entity.endAngle * 180) / Math.PI}
               onCommit={(deg) => update({ endAngle: (deg * Math.PI) / 180 } as any)}
@@ -161,14 +161,14 @@ const SingleEntityProps: React.FC<{
       )}
       {entity.type === 'ellipse' && (
         <>
-          <PointInput label="Center" p={entity.c} onCommit={(c) => update({ c } as any)} />
+          <PointInput label="Mittelp." p={entity.c} onCommit={(c) => update({ c } as any)} />
           <Row label="Rx">
             <NumInput value={entity.rx} onCommit={(rx) => update({ rx } as any)} suffix="mm" />
           </Row>
           <Row label="Ry">
             <NumInput value={entity.ry} onCommit={(ry) => update({ ry } as any)} suffix="mm" />
           </Row>
-          <Row label="Rotation">
+          <Row label="Drehung">
             <NumInput
               value={(entity.rotation * 180) / Math.PI}
               onCommit={(deg) => update({ rotation: (deg * Math.PI) / 180 } as any)}
@@ -178,12 +178,12 @@ const SingleEntityProps: React.FC<{
         </>
       )}
       {entity.type === 'polyline' && (
-        <Row label="Points"><span className="text-ink text-[11px]">{entity.points.length}</span></Row>
+        <Row label="Punkte"><span className="text-ink text-[11px]">{entity.points.length}</span></Row>
       )}
       {/* dimension extras live alongside the A/B/offset block above */}
       {entity.type === 'text' && (
         <>
-          <PointInput label="Pos" p={entity.pos} onCommit={(pos) => update({ pos } as any)} />
+          <PointInput label="Pos." p={entity.pos} onCommit={(pos) => update({ pos } as any)} />
           <Row label="Text">
             <input
               value={entity.text}
@@ -191,7 +191,7 @@ const SingleEntityProps: React.FC<{
               className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
             />
           </Row>
-          <Row label="Height">
+          <Row label="Höhe">
             <NumInput value={entity.height} onCommit={(height) => update({ height } as any)} suffix="mm" />
           </Row>
         </>
@@ -200,13 +200,24 @@ const SingleEntityProps: React.FC<{
   );
 };
 
+const TYPE_DE: Record<string, string> = {
+  line: 'Linie',
+  rect: 'Rechteck',
+  circle: 'Kreis',
+  arc: 'Bogen',
+  polyline: 'Polylinie',
+  ellipse: 'Ellipse',
+  dimension: 'Bemaßung',
+  text: 'Text',
+};
+
 const DIM_KINDS: { id: DimensionKind; label: string }[] = [
-  { id: 'aligned', label: 'Aligned' },
+  { id: 'aligned', label: 'Ausgerichtet' },
   { id: 'horizontal', label: 'Horizontal' },
-  { id: 'vertical', label: 'Vertical' },
+  { id: 'vertical', label: 'Vertikal' },
   { id: 'radius', label: 'Radius' },
-  { id: 'diameter', label: 'Diameter' },
-  { id: 'angular', label: 'Angular' },
+  { id: 'diameter', label: 'Durchmesser' },
+  { id: 'angular', label: 'Winkel' },
 ];
 
 const DimensionExtras: React.FC<{
@@ -217,7 +228,7 @@ const DimensionExtras: React.FC<{
   const isAngular = kind === 'angular';
   return (
     <>
-      <Row label="Kind">
+      <Row label="Art">
         <select
           value={kind}
           onChange={(e) => update({ kind: e.target.value as DimensionKind } as any)}
@@ -228,7 +239,7 @@ const DimensionExtras: React.FC<{
           ))}
         </select>
       </Row>
-      <Row label={isAngular ? 'Arc r' : kind === 'radius' || kind === 'diameter' ? 'Radius' : 'Offset'}>
+      <Row label={isAngular ? 'Bogen-r' : kind === 'radius' || kind === 'diameter' ? 'Radius' : 'Versatz'}>
         <NumInput
           value={entity.offset}
           onCommit={(offset) => update({ offset } as any)}
@@ -236,25 +247,25 @@ const DimensionExtras: React.FC<{
         />
       </Row>
       {isAngular && entity.c && (
-        <PointInput label="Vertex" p={entity.c} onCommit={(c) => update({ c } as any)} />
+        <PointInput label="Scheitel" p={entity.c} onCommit={(c) => update({ c } as any)} />
       )}
-      <Row label="Arrow">
+      <Row label="Pfeil">
         <select
           value={entity.arrow ?? 'tick'}
           onChange={(e) => update({ arrow: e.target.value as 'tick' | 'arrow' } as any)}
           className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
         >
-          <option value="tick">Tick</option>
-          <option value="arrow">Arrow</option>
+          <option value="tick">Strich</option>
+          <option value="arrow">Pfeil</option>
         </select>
       </Row>
-      <Row label="Decimals">
+      <Row label="Dezimal">
         <NumInput
           value={entity.precision ?? 2}
           onCommit={(precision) => update({ precision: Math.max(0, Math.round(precision)) } as any)}
         />
       </Row>
-      <Row label="Prefix">
+      <Row label="Präfix">
         <input
           value={entity.prefix ?? ''}
           onChange={(e) => update({ prefix: e.target.value } as any)}
@@ -270,11 +281,11 @@ const DimensionExtras: React.FC<{
           className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
         />
       </Row>
-      <Row label="Override">
+      <Row label="Text fest">
         <input
           value={entity.override ?? ''}
           onChange={(e) => update({ override: e.target.value } as any)}
-          placeholder="(measured)"
+          placeholder="(gemessen)"
           className="bg-panel2 text-ink text-[11px] px-1.5 py-1 rounded border border-line focus:border-brand outline-none w-full"
         />
       </Row>

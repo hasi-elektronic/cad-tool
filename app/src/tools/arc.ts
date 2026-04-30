@@ -6,7 +6,7 @@ import type { Tool, ToolContext, ToolEvent, ToolResult } from './types';
 // 3-point arc: pick center → start point → end point.
 export class ArcTool implements Tool {
   id = 'arc';
-  hint = 'ARC: pick center';
+  hint = 'BOGEN: Mittelpunkt wählen';
   private center: Point | null = null;
   private startPt: Point | null = null;
 
@@ -20,12 +20,12 @@ export class ArcTool implements Tool {
       const p = ev.point ?? ctx.cursor;
       if (!this.center) {
         this.center = p;
-        return { done: false, hint: 'ARC: pick start point' };
+        return { done: false, hint: 'BOGEN: Startpunkt wählen' };
       }
       if (!this.startPt) {
         if (distance(this.center, p) < 1e-6) return { done: false };
         this.startPt = p;
-        return { done: false, hint: 'ARC: pick end point (CCW)' };
+        return { done: false, hint: 'BOGEN: Endpunkt wählen (CCW)' };
       }
       const r = distance(this.center, this.startPt);
       const startAngle = Math.atan2(this.startPt.y - this.center.y, this.startPt.x - this.center.x);

@@ -21,11 +21,11 @@ export class LinearDimensionTool implements Tool {
   constructor(kind: 'aligned' | 'horizontal' | 'vertical') {
     this.kind = kind;
     this.id = kind === 'aligned' ? 'dimension' : `dim_${kind}`;
-    this.hint = `${this.label()}: pick first point`;
+    this.hint = `${this.label()}: ersten Punkt wählen`;
   }
 
   private label(): string {
-    return this.kind === 'aligned' ? 'DIM' : this.kind === 'horizontal' ? 'DIM-H' : 'DIM-V';
+    return this.kind === 'aligned' ? 'BEM' : this.kind === 'horizontal' ? 'BEM-H' : 'BEM-V';
   }
 
   step(ev: ToolEvent, ctx: ToolContext): ToolResult {
@@ -38,12 +38,12 @@ export class LinearDimensionTool implements Tool {
       const p = ev.point ?? ctx.cursor;
       if (!this.a) {
         this.a = p;
-        return { done: false, hint: `${this.label()}: pick second point` };
+        return { done: false, hint: `${this.label()}: zweiten Punkt wählen` };
       }
       if (!this.b) {
         if (Math.hypot(p.x - this.a.x, p.y - this.a.y) < 1e-6) return { done: false };
         this.b = p;
-        return { done: false, hint: `${this.label()}: pick dimension line offset` };
+        return { done: false, hint: `${this.label()}: Maßlinien-Versatz wählen` };
       }
       const dim: DimensionEntity = {
         id: uid('dim'),
@@ -127,7 +127,7 @@ export class RadialDimensionTool implements Tool {
   constructor(kind: 'radius' | 'diameter') {
     this.kind = kind;
     this.id = kind === 'radius' ? 'dim_radius' : 'dim_diameter';
-    this.hint = `${kind === 'radius' ? 'RAD' : 'DIA'}: pick a circle or arc`;
+    this.hint = `${kind === 'radius' ? 'RAD' : 'Ø'}: Kreis oder Bogen wählen`;
   }
 
   step(ev: ToolEvent, ctx: ToolContext): ToolResult {
@@ -142,7 +142,7 @@ export class RadialDimensionTool implements Tool {
         this.target = hit;
         return {
           done: false,
-          hint: `${this.kind === 'radius' ? 'RAD' : 'DIA'}: pick leader end point`,
+          hint: `${this.kind === 'radius' ? 'RAD' : 'Ø'}: Hinweislinien-Endpunkt wählen`,
         };
       }
       const lead = ev.point ?? ctx.cursor;
@@ -200,7 +200,7 @@ function pickCircleArc(p: Point): { c: Point; r: number; entityId: string } | nu
 // pick a point on the arc to set its radius.
 export class AngularDimensionTool implements Tool {
   id = 'dim_angular';
-  hint = 'ANG: pick first line';
+  hint = 'WIN: erste Linie wählen';
   private firstLine: { id: string; a: Point; b: Point } | null = null;
   private secondLine: { id: string; a: Point; b: Point } | null = null;
 
@@ -215,13 +215,13 @@ export class AngularDimensionTool implements Tool {
         const ln = pickLine(ev.point ?? ctx.cursor);
         if (!ln) return { done: false };
         this.firstLine = ln;
-        return { done: false, hint: 'ANG: pick second line' };
+        return { done: false, hint: 'WIN: zweite Linie wählen' };
       }
       if (!this.secondLine) {
         const ln = pickLine(ev.point ?? ctx.cursor);
         if (!ln || ln.id === this.firstLine.id) return { done: false };
         this.secondLine = ln;
-        return { done: false, hint: 'ANG: pick arc radius' };
+        return { done: false, hint: 'WIN: Bogenradius wählen' };
       }
       const ang = buildAngularEntity(this.firstLine, this.secondLine, ev.point ?? ctx.cursor);
       this.firstLine = null;

@@ -12,7 +12,7 @@ interface TrimOpts {
 // with another entity. Supports trimming lines only (most common case).
 export class TrimTool implements Tool {
   id = 'trim';
-  hint = 'TRIM: click a line near the part to remove';
+  hint = 'STUTZEN: Linie nahe dem zu entfernenden Teil anklicken';
   private opts: TrimOpts;
   constructor(opts: TrimOpts) {
     this.opts = opts;

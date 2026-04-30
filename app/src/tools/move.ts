@@ -35,7 +35,7 @@ export class MoveTool implements Tool {
   constructor(opts: MoveOpts, copy = false) {
     this.opts = opts;
     this.id = copy ? 'copy' : 'move';
-    this.hint = copy ? 'COPY: pick base point' : 'MOVE: pick base point';
+    this.hint = copy ? 'KOPIEREN: Basispunkt wählen' : 'VERSCHIEBEN: Basispunkt wählen';
   }
 
   step(ev: ToolEvent, ctx: ToolContext): ToolResult {
@@ -44,7 +44,7 @@ export class MoveTool implements Tool {
       const p = ev.point ?? ctx.cursor;
       if (!this.base) {
         this.base = p;
-        return { done: false, hint: this.id === 'copy' ? 'COPY: pick destination' : 'MOVE: pick destination' };
+        return { done: false, hint: this.id === 'copy' ? 'KOPIEREN: Zielpunkt wählen' : 'VERSCHIEBEN: Zielpunkt wählen' };
       }
       const dx = p.x - this.base.x;
       const dy = p.y - this.base.y;
