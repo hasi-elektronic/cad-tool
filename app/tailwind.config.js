@@ -5,12 +5,12 @@ export default {
     extend: {
       colors: {
         brand: '#33afe2',
-        canvas: '#1a1a2e',
+        canvas: '#1e1e1e',
         ink: '#e8eef7',
         muted: '#8a93a8',
-        panel: '#22223a',
-        panel2: '#2c2c47',
-        line: '#3a3a5a',
+        panel: '#262626',
+        panel2: '#2f2f2f',
+        line: '#3a3a3a',
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'ui-monospace', 'Menlo', 'monospace'],

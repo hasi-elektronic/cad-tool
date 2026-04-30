@@ -158,35 +158,35 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
 
     if (snapRef.current) drawSnapMarker(ctx, v, snapRef.current);
 
-    // Cursor crosshair.
     const cs = cursorScreenRef.current;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cs.x - 10, cs.y);
-    ctx.lineTo(cs.x + 10, cs.y);
-    ctx.moveTo(cs.x, cs.y - 10);
-    ctx.lineTo(cs.x, cs.y + 10);
-    ctx.stroke();
-    ctx.restore();
+    // AutoCAD-style full-screen crosshair with a pickbox at the centre.
+    drawCrosshair(ctx, cs, v.width, v.height);
 
-    // Live distance/angle readout if a tool has a "from" point.
+    // UCS icon (X/Y axes) in the bottom-left corner.
+    drawUCS(ctx, v);
+
+    // Live distance/angle readout (AutoCAD-style "Dynamic Input").
     if (lastCommittedPointRef.current) {
       const from = lastCommittedPointRef.current;
       const to = cursorWorldRef.current;
       const d = distance(from, to);
       const ang = (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
       ctx.save();
-      ctx.fillStyle = 'rgba(34,34,58,0.85)';
-      ctx.strokeStyle = '#33afe2';
       ctx.font = "11px 'JetBrains Mono', monospace";
-      const txt = `Δ ${formatNumber(d, 2)}mm  ∠ ${formatNumber(ang, 1)}°`;
+      const txt = `Δ ${formatNumber(d, 2)} mm   ∠ ${formatNumber(ang, 1)}°`;
       const m = ctx.measureText(txt);
-      ctx.fillRect(cs.x + 14, cs.y + 14, m.width + 12, 18);
-      ctx.strokeRect(cs.x + 14, cs.y + 14, m.width + 12, 18);
+      const w = m.width + 14;
+      const h = 20;
+      const x = cs.x + 16;
+      const y = cs.y - h - 16;
+      ctx.fillStyle = 'rgba(20,20,20,0.92)';
+      ctx.strokeStyle = '#33afe2';
+      ctx.lineWidth = 1;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeRect(x, y, w, h);
       ctx.fillStyle = '#e8eef7';
-      ctx.fillText(txt, cs.x + 20, cs.y + 27);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(txt, x + 7, y + h / 2);
       ctx.restore();
     }
 
@@ -452,11 +452,81 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
         onMouseLeave={() => (isPanningRef.current = false)}
         onWheel={onWheel}
         onContextMenu={(e) => e.preventDefault()}
-        className="absolute inset-0 cursor-crosshair"
+        className="absolute inset-0"
+        style={{ cursor: 'none' }}
       />
     </div>
   );
 };
+
+// Full-screen crosshair (signature AutoCAD look) with a small pickbox in the
+// middle. The pickbox communicates the click target and gives selection a
+// tactile feel even though it's purely visual.
+function drawCrosshair(ctx: CanvasRenderingContext2D, cs: Point, width: number, height: number) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(220,220,220,0.55)';
+  ctx.lineWidth = 1;
+  // Sub-pixel offset for crisp 1px lines.
+  const x = Math.round(cs.x) + 0.5;
+  const y = Math.round(cs.y) + 0.5;
+  ctx.beginPath();
+  ctx.moveTo(0, y);
+  ctx.lineTo(width, y);
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x, height);
+  ctx.stroke();
+  // Pickbox.
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = 1.25;
+  ctx.strokeRect(x - 5, y - 5, 10, 10);
+  ctx.restore();
+}
+
+// World-coordinate UCS marker: the small X/Y arrow icon AutoCAD draws in the
+// bottom-left. We render it in screen space, anchored to the corner.
+function drawUCS(ctx: CanvasRenderingContext2D, v: Viewport) {
+  const pad = 18;
+  const len = 28;
+  const x0 = pad;
+  const y0 = v.height - pad;
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.font = "bold 10px 'JetBrains Mono', monospace";
+  // X axis (red, points right)
+  ctx.strokeStyle = '#ff5b5b';
+  ctx.fillStyle = '#ff5b5b';
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x0 + len, y0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x0 + len, y0);
+  ctx.lineTo(x0 + len - 6, y0 - 3);
+  ctx.lineTo(x0 + len - 6, y0 + 3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillText('X', x0 + len + 4, y0 + 4);
+  // Y axis (green, points up — screen Y is inverted)
+  ctx.strokeStyle = '#5bd66a';
+  ctx.fillStyle = '#5bd66a';
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x0, y0 - len);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x0, y0 - len);
+  ctx.lineTo(x0 - 3, y0 - len + 6);
+  ctx.lineTo(x0 + 3, y0 - len + 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillText('Y', x0 - 4, y0 - len - 6);
+  // Origin dot
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath();
+  ctx.arc(x0, y0, 1.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
 
 // Parse "x,y" (absolute) or "@dx,dy" (relative to last point).
 function parsePoint(s: string, lastPoint: Point | null): Point | null {
