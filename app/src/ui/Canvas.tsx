@@ -4,6 +4,7 @@ import type { Entity, Point, SnapResult, Viewport } from '../core/types';
 import {
   panByScreen,
   screenToWorld,
+  worldToScreen,
   zoomAtScreen,
 } from '../core/viewport';
 import { drawGrid } from '../render/grid';
@@ -158,17 +159,25 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
 
     if (snapRef.current) drawSnapMarker(ctx, v, snapRef.current);
 
-    const cs = cursorScreenRef.current;
-    // AutoCAD-style full-screen crosshair with a pickbox at the centre.
-    drawCrosshair(ctx, cs, v.width, v.height);
+    // "Magnet" snap visualisation: when snap is active, the visible crosshair
+    // jumps to the snapped (or ortho-constrained) position so the cursor
+    // physically locks to the geometry instead of just reporting it on click.
+    const eff = effectiveCursor();
+    const visualScreen = snapRef.current || hasOrthoLock()
+      ? worldToScreen(v, eff)
+      : cursorScreenRef.current;
+    const locked = !!snapRef.current;
+    drawCrosshair(ctx, visualScreen, v.width, v.height, locked);
+    if (locked) drawMagnetLink(ctx, cursorScreenRef.current, visualScreen);
 
     // UCS icon (X/Y axes) in the bottom-left corner.
     drawUCS(ctx, v);
 
-    // Live distance/angle readout (AutoCAD-style "Dynamic Input").
+    // Live distance/angle readout uses the effective (snapped/ortho) point so
+    // the readout matches what the click will actually commit.
     if (lastCommittedPointRef.current) {
       const from = lastCommittedPointRef.current;
-      const to = cursorWorldRef.current;
+      const to = eff;
       const d = distance(from, to);
       const ang = (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
       ctx.save();
@@ -177,8 +186,8 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
       const m = ctx.measureText(txt);
       const w = m.width + 14;
       const h = 20;
-      const x = cs.x + 16;
-      const y = cs.y - h - 16;
+      const x = visualScreen.x + 16;
+      const y = visualScreen.y - h - 16;
       ctx.fillStyle = 'rgba(20,20,20,0.92)';
       ctx.strokeStyle = '#33afe2';
       ctx.lineWidth = 1;
@@ -191,6 +200,10 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
     }
 
     onZoom(v.scale);
+  }
+
+  function hasOrthoLock(): boolean {
+    return store.get().ui.ortho && lastCommittedPointRef.current !== null;
   }
 
   // Apply ortho constraint relative to the tool's "from" point if any.
@@ -214,7 +227,9 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
       const s = findSnap(world, store.get().doc.entities, v, {
         enabled: true,
         gridStep: ui.gridMinor,
-        pickRadiusPx: 12,
+        // Generous magnet radius so the cursor reliably "sticks" to nearby
+        // geometry without the user having to hover pixel-perfectly.
+        pickRadiusPx: 16,
       });
       snapRef.current = s;
     } else {
@@ -460,13 +475,18 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
 };
 
 // Full-screen crosshair (signature AutoCAD look) with a small pickbox in the
-// middle. The pickbox communicates the click target and gives selection a
-// tactile feel even though it's purely visual.
-function drawCrosshair(ctx: CanvasRenderingContext2D, cs: Point, width: number, height: number) {
+// middle. Pickbox switches to yellow when the cursor is magnetised to a snap
+// point so the lock is unmistakable.
+function drawCrosshair(
+  ctx: CanvasRenderingContext2D,
+  cs: Point,
+  width: number,
+  height: number,
+  locked: boolean,
+) {
   ctx.save();
-  ctx.strokeStyle = 'rgba(220,220,220,0.55)';
+  ctx.strokeStyle = locked ? 'rgba(255,209,102,0.55)' : 'rgba(220,220,220,0.55)';
   ctx.lineWidth = 1;
-  // Sub-pixel offset for crisp 1px lines.
   const x = Math.round(cs.x) + 0.5;
   const y = Math.round(cs.y) + 0.5;
   ctx.beginPath();
@@ -475,10 +495,25 @@ function drawCrosshair(ctx: CanvasRenderingContext2D, cs: Point, width: number, 
   ctx.moveTo(x, 0);
   ctx.lineTo(x, height);
   ctx.stroke();
-  // Pickbox.
-  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-  ctx.lineWidth = 1.25;
-  ctx.strokeRect(x - 5, y - 5, 10, 10);
+  ctx.strokeStyle = locked ? '#ffd166' : 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = locked ? 1.6 : 1.25;
+  const r = locked ? 6 : 5;
+  ctx.strokeRect(x - r, y - r, r * 2, r * 2);
+  ctx.restore();
+}
+
+// Faint dashed line from the raw mouse position to the snapped target, so the
+// user can feel the magnet pulling the cursor across the gap.
+function drawMagnetLink(ctx: CanvasRenderingContext2D, raw: Point, snapped: Point) {
+  if (Math.hypot(raw.x - snapped.x, raw.y - snapped.y) < 4) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,209,102,0.45)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 3]);
+  ctx.beginPath();
+  ctx.moveTo(raw.x, raw.y);
+  ctx.lineTo(snapped.x, snapped.y);
+  ctx.stroke();
   ctx.restore();
 }
 
