@@ -115,13 +115,22 @@ const TOOLS: ToolButtonSpec[] = [
 ];
 
 interface ToolbarProps {
-  onZoomFit: () => void;
-  onExport: () => void;
-  onImport: () => void;
-  onHelp: () => void;
+  onZoomFit:           () => void;
+  onExport:            () => void;
+  onImport:            () => void;
+  onHelp:              () => void;
+  onKalkulation:       () => void;
+  kalkulationLoading?: boolean;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ onZoomFit, onExport, onImport, onHelp }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({
+  onZoomFit,
+  onExport,
+  onImport,
+  onHelp,
+  onKalkulation,
+  kalkulationLoading = false,
+}) => {
   const tool = useStore((s) => s.ui.tool);
   return (
     <div className="flex items-center gap-1 bg-panel border-b border-line px-2 py-1.5">
@@ -149,6 +158,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onZoomFit, onExport, onImport,
         <SmallBtn onClick={onZoomFit} title="Zoom anpassen (F)">ANPASSEN</SmallBtn>
         <SmallBtn onClick={onImport} title="DXF öffnen">ÖFFNEN</SmallBtn>
         <SmallBtn onClick={onExport} title="DXF speichern (Strg+S)">SPEICHERN</SmallBtn>
+        {/* Kalkulation butonu — öne çıkarılmış, farklı renk */}
+        <button
+          onClick={onKalkulation}
+          disabled={kalkulationLoading}
+          title="An Kalkulation senden (Strg+K)"
+          className={
+            'text-[10px] font-bold px-2.5 py-1.5 rounded-md tracking-wider transition ' +
+            (kalkulationLoading
+              ? 'bg-brand/30 text-brand/60 cursor-wait'
+              : 'bg-brand text-white hover:bg-brand/80')
+          }
+        >
+          {kalkulationLoading ? '⏳ SENDEN…' : '↗ KALKULATION'}
+        </button>
         <SmallBtn onClick={onHelp} title="Hilfe (?)">?</SmallBtn>
       </div>
     </div>
