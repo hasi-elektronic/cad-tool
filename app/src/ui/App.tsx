@@ -6,10 +6,12 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { StatusBar } from './StatusBar';
 import { CommandLine } from './CommandLine';
 import { HelpOverlay } from './HelpOverlay';
+import { KalkulationDialog } from './KalkulationDialog';
 import { store, useStore } from '../state/useStore';
 import type { SnapResult, ToolId } from '../core/types';
 import { downloadDXF } from '../io/dxf-export';
 import { importDXFFromFile } from '../io/dxf-import';
+import { sendToKalkulation, type KalkulationParams } from '../io/kalkulation-export';
 
 export const App: React.FC = () => {
   const apiRef = useRef<CommandAPI | null>(null);
@@ -23,9 +25,11 @@ export const App: React.FC = () => {
   const showHelp = useStore((s) => s.ui.showHelp);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // OS file-association handler: when launched from "Open with → HASI CAD",
-  // the browser delivers FileSystemFileHandles via launchQueue. Pull each one
-  // through the existing DXF importer.
+  // Kalkulation dialog state
+  const [showKalkDialog, setShowKalkDialog] = useState(false);
+  const [kalkLoading,    setKalkLoading]    = useState(false);
+
+  // OS file-association handler
   useEffect(() => {
     interface LaunchParams { files?: FileSystemFileHandle[] }
     const lq = (window as unknown as {
@@ -66,10 +70,33 @@ export const App: React.FC = () => {
       downloadDXF(store.get().doc, name);
     } else if (cmd === 'import') {
       fileInputRef.current?.click();
+    } else if (cmd === 'kalkulation') {
+      setShowKalkDialog(true);
     } else if (cmd === 'undo') store.undo();
     else if (cmd === 'redo') store.redo();
     else if (cmd === 'fit') apiRef.current?.zoomFit();
     else if (cmd === 'help') store.setUI({ showHelp: true });
+  }, []);
+
+  // Kalkulation senden
+  const handleKalkulationConfirm = useCallback(async (params: KalkulationParams) => {
+    setShowKalkDialog(false);
+    setKalkLoading(true);
+    try {
+      const doc = store.get().doc;
+      if (doc.entities.length === 0) {
+        alert('Zeichnung ist leer. Bitte zuerst zeichnen.');
+        return;
+      }
+      const title = params.title || 'cad-export';
+      const dxfName = `${title.replace(/[^a-z0-9_-]/gi, '_')}.dxf`;
+      const result = await sendToKalkulation(doc, params, dxfName);
+      window.open(result.url, '_blank');
+    } catch (err) {
+      alert('Fehler beim Senden:\n' + (err as Error).message);
+    } finally {
+      setKalkLoading(false);
+    }
   }, []);
 
   // Global keyboard bindings.
@@ -81,11 +108,12 @@ export const App: React.FC = () => {
       return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
     }
     function onKey(e: KeyboardEvent) {
-      // Cancel and help work everywhere.
       if (e.key === 'Escape') {
         if (isTyping()) return;
         if (store.get().ui.showHelp) {
           store.setUI({ showHelp: false });
+        } else if (showKalkDialog) {
+          setShowKalkDialog(false);
         } else {
           apiRef.current?.cancel();
         }
@@ -96,7 +124,6 @@ export const App: React.FC = () => {
         return;
       }
 
-      // Ctrl/Cmd combos.
       const meta = e.ctrlKey || e.metaKey;
       if (meta) {
         if (e.key.toLowerCase() === 'z') {
@@ -115,12 +142,17 @@ export const App: React.FC = () => {
           downloadDXF(store.get().doc);
           return;
         }
+        // Ctrl+K → Kalkulation
+        if (e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          setShowKalkDialog(true);
+          return;
+        }
         return;
       }
 
       if (isTyping()) return;
 
-      // Tool shortcuts.
       const map: Record<string, () => void> = {
         l: () => setTool('line'),
         c: () => setTool('circle'),
@@ -133,7 +165,6 @@ export const App: React.FC = () => {
         t: () => setTool('trim'),
         m: () => setTool('move'),
         f: () => {
-          // F is overloaded: Fillet if a tool isn't mid-op, else Zoom Fit.
           const sel = store.get().ui.selectedIds.length > 0;
           if (sel) setTool('fillet');
           else apiRef.current?.zoomFit();
@@ -144,8 +175,6 @@ export const App: React.FC = () => {
       };
 
       if (e.key === ' ') {
-        // AutoCAD convention: Space restarts the last command — re-arm the
-        // currently-active tool so the user can immediately start a new instance.
         e.preventDefault();
         store.setTool(store.get().ui.tool);
         return;
@@ -171,7 +200,13 @@ export const App: React.FC = () => {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [showKalkDialog]);
+
+  // Active layer adını malzeme önerisi olarak geç
+  const activeLayerName = useStore((s) => {
+    const doc = s.doc;
+    return doc.layers.find((l) => l.id === doc.activeLayerId)?.name ?? '';
+  });
 
   return (
     <div className="h-screen w-screen flex flex-col bg-canvas">
@@ -180,6 +215,8 @@ export const App: React.FC = () => {
         onExport={() => onCommand('export')}
         onImport={() => fileInputRef.current?.click()}
         onHelp={() => store.setUI({ showHelp: true })}
+        onKalkulation={() => setShowKalkDialog(true)}
+        kalkulationLoading={kalkLoading}
       />
       <div className="flex-1 flex min-h-0">
         <LayerPanel />
@@ -198,6 +235,13 @@ export const App: React.FC = () => {
         <PropertiesPanel />
       </div>
       {showHelp && <HelpOverlay onClose={() => store.setUI({ showHelp: false })} />}
+      {showKalkDialog && (
+        <KalkulationDialog
+          onConfirm={handleKalkulationConfirm}
+          onCancel={() => setShowKalkDialog(false)}
+          suggestedMaterial={activeLayerName}
+        />
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -208,7 +252,6 @@ export const App: React.FC = () => {
           if (!f) return;
           try {
             const result = await importDXFFromFile(f);
-            // Merge imported layers (skip ones already present by name).
             const existing = new Set(store.get().doc.layers.map((l) => l.name));
             for (const layer of result.layers) {
               if (!existing.has(layer.name)) store.addLayer(layer);
