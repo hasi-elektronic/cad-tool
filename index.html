@@ -240,6 +240,17 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--color-backgrou
 <div id="pane-q1" class="tab-pane"></div>
 <div id="pane-q2" class="tab-pane"></div>
 <div id="pane-q3" class="tab-pane"></div>
+
+<div id="fl-kalk-bar" style="
+  padding:14px 20px; background:#f0f6ff; border-top:1px solid #cce;
+  display:flex; align-items:center; gap:12px; justify-content:flex-end;
+">
+  <span id="fl-kalk-msg" style="font-size:12px;font-weight:600;color:#1a7a1a;display:none;"></span>
+  <button onclick="sendFlanscheToKalkulation()" style="
+    background:#1B5E9E; color:#fff; border:none; border-radius:8px;
+    padding:10px 20px; font-size:13px; font-weight:700; cursor:pointer;
+  ">↗ An Kalkulation senden</button>
+</div>
 </div><!-- /fl-mod -->
 <div id="dt-mod">
   <iframe src="https://drueckteile-rechner.pages.dev/" style="width:100%;height:calc(100vh - 120px);min-height:700px;border:none;display:block;"></iframe>
@@ -716,6 +727,57 @@ function showMod(name, btn) {
   document.getElementById('dt-mod').style.display = name==='dt' ? 'block' : 'none';
   document.getElementById('kn-mod').style.display = name==='kn' ? 'block' : 'none';
   document.getElementById('sch-mod').style.display = name==='sch' ? 'block' : 'none';
+}
+
+// ── Aktif Flansch-Pane takibi ──────────────────────────────────
+var _activeFlanschPane = 'r1';
+var _origShowPane = showPane;
+showPane = function(id) { _origShowPane(id); _activeFlanschPane = id; };
+
+// ── An Sickinger Kalkulation senden (Flansche) ─────────────────
+function sendFlanscheToKalkulation() {
+  var msg = document.getElementById('fl-kalk-msg');
+  var p = _activeFlanschPane;
+  var c = curD[p];
+  function showMsg(t, color) {
+    if (msg) { msg.style.display='block'; msg.style.color=color||'#1a7a1a'; msg.textContent=t; }
+  }
+  if (!c) { showMsg('⚠ Bitte zuerst einen Flansch auswählen und berechnen.', '#c02828'); return; }
+
+  var matRaw = (document.getElementById(p+'-mat')||{}).value || '';
+  var werkstoff = matRaw.split('|')[0].trim();
+  var menge = parseInt((document.getElementById(p+'-qty')||{}).value) || 1;
+
+  var shape, width, height, title;
+  if (c.type === 'rund') {
+    shape = 'rund'; width = Math.round(c.D); height = 0;
+    title = 'Flansch Ø' + c.D + ' DN' + c.dn + (c.iD ? ' (iD' + c.iD + ')' : '');
+  } else {
+    shape = 'eckig'; width = Math.round(c.aOD || c.a); height = Math.round(c.bOD || c.b);
+    title = 'Rechteckflansch ' + width + '×' + height;
+  }
+
+  var popup = window.open('', '_blank');
+  fetch('https://sickinger-kalkulationssystem.pages.dev/api/import/cad', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: 'cad_883064945860458e135defe1dd4c042976e5',
+      calc_type: 'drueckteile',
+      title: title,
+      batchQty: menge,
+      positions: [{
+        label: title, material: werkstoff,
+        shape: shape, width: width, height: height,
+        thickness: c.s || 0, qty: menge, pricePerKg: 0
+      }]
+    })
+  }).then(function(res){ return res.json(); }).then(function(data){
+    if (data && data.url) {
+      showMsg('✓ Kalkulation #' + data.id + ' geöffnet', '#1a7a1a');
+      if (popup) { popup.location.href = data.url; } else { window.open(data.url, '_blank'); }
+    } else { showMsg('✗ Fehler', '#c02828'); if (popup) popup.close(); }
+  }).catch(function(e){ showMsg('✗ ' + e.message, '#c02828'); if (popup) popup.close(); });
 }
 </script>
 </body></html>
