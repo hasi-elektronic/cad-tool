@@ -119,9 +119,10 @@ interface ToolbarProps {
   onExport: () => void;
   onImport: () => void;
   onHelp: () => void;
+  onKalkulationSend: () => void;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ onZoomFit, onExport, onImport, onHelp }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ onZoomFit, onExport, onImport, onHelp, onKalkulationSend }) => {
   const tool = useStore((s) => s.ui.tool);
   return (
     <div className="flex items-center gap-1 bg-panel border-b border-line px-2 py-1.5">
@@ -150,6 +151,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onZoomFit, onExport, onImport,
         <SmallBtn onClick={onImport} title="DXF öffnen">ÖFFNEN</SmallBtn>
         <SmallBtn onClick={onExport} title="DXF speichern (Strg+S)">SPEICHERN</SmallBtn>
         <SmallBtn onClick={onHelp} title="Hilfe (?)">?</SmallBtn>
+        <button
+          onClick={onKalkulationSend}
+          title="Zeichnung an Kalkulations-System senden"
+          className="text-[10px] font-bold text-white bg-[#33afe2] hover:bg-[#5dc1ec] px-2.5 py-1.5 rounded-md tracking-wider transition ml-1"
+        >
+          ↗ KALKULATION
+        </button>
       </div>
     </div>
   );
@@ -168,3 +176,4 @@ const SmallBtn: React.FC<{
     {children}
   </button>
 );
+

@@ -10,6 +10,7 @@ import { store, useStore } from '../state/useStore';
 import type { SnapResult, ToolId } from '../core/types';
 import { downloadDXF } from '../io/dxf-export';
 import { importDXFFromFile } from '../io/dxf-import';
+import { KalkulationSendModal } from './KalkulationSendModal';
 
 export const App: React.FC = () => {
   const apiRef = useRef<CommandAPI | null>(null);
@@ -21,6 +22,7 @@ export const App: React.FC = () => {
     snap: null,
   });
   const showHelp = useStore((s) => s.ui.showHelp);
+  const [showKalkSend, setShowKalkSend] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // OS file-association handler: when launched from "Open with → HASI CAD",
@@ -180,6 +182,7 @@ export const App: React.FC = () => {
         onExport={() => onCommand('export')}
         onImport={() => fileInputRef.current?.click()}
         onHelp={() => store.setUI({ showHelp: true })}
+        onKalkulationSend={() => setShowKalkSend(true)}
       />
       <div className="flex-1 flex min-h-0">
         <LayerPanel />
@@ -198,6 +201,7 @@ export const App: React.FC = () => {
         <PropertiesPanel />
       </div>
       {showHelp && <HelpOverlay onClose={() => store.setUI({ showHelp: false })} />}
+      {showKalkSend && <KalkulationSendModal onClose={() => setShowKalkSend(false)} />}
       <input
         ref={fileInputRef}
         type="file"
