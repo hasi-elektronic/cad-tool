@@ -407,7 +407,24 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
         if (!t) return;
         const expects = t.expects ? t.expects() : 'point';
         if (expects === 'point') {
-          const p = parsePoint(val.trim(), lastCommittedPointRef.current ?? cursorWorldRef.current);
+          const v = val.trim();
+          const from = lastCommittedPointRef.current;
+          let p: Point | null = null;
+          // Direct distance entry (AutoCAD style): a plain number draws that
+          // many mm from the last point towards the current cursor direction
+          // (ortho/snap-aware via effectiveCursor).
+          if (from && /^-?\d+(?:\.\d+)?$/.test(v)) {
+            const d = parseFloat(v);
+            const to = effectiveCursor();
+            const len = Math.hypot(to.x - from.x, to.y - from.y);
+            if (isFinite(d) && len > 1e-9) {
+              p = {
+                x: from.x + ((to.x - from.x) / len) * d,
+                y: from.y + ((to.y - from.y) / len) * d,
+              };
+            }
+          }
+          if (!p) p = parsePoint(v, from ?? cursorWorldRef.current);
           if (!p) return;
           const result = t.step({ type: 'value', point: p }, buildToolContext());
           lastCommittedPointRef.current = p;
@@ -562,12 +579,20 @@ function drawUCS(ctx: CanvasRenderingContext2D, v: Viewport) {
   ctx.restore();
 }
 
-// Parse "x,y" (absolute) or "@dx,dy" (relative to last point).
+// Parse "x,y" (absolute), "@dx,dy" (relative to last point) or polar
+// "@100<45" (100 mm at 45°, CCW from +X, relative to last point).
 function parsePoint(s: string, lastPoint: Point | null): Point | null {
   const trimmed = s.trim();
   if (!trimmed) return null;
   const rel = trimmed.startsWith('@');
   const body = rel ? trimmed.slice(1) : trimmed;
+  const polar = body.match(/^(-?\d+(?:\.\d+)?)\s*<\s*(-?\d+(?:\.\d+)?)$/);
+  if (polar) {
+    const d = parseFloat(polar[1]);
+    const ang = (parseFloat(polar[2]) * Math.PI) / 180;
+    const base = rel && lastPoint ? lastPoint : { x: 0, y: 0 };
+    return { x: base.x + d * Math.cos(ang), y: base.y + d * Math.sin(ang) };
+  }
   const parts = body.split(/[,\s]+/).filter(Boolean);
   if (parts.length !== 2) return null;
   const x = parseFloat(parts[0]);

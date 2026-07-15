@@ -81,7 +81,7 @@ export const CommandLine: React.FC<CommandLineProps> = ({ api, hint, onCommand }
             }
           }
         }}
-        placeholder="x,y  oder  @dx,dy  oder  Abstand  oder  Befehl (linie, kreis, ...)"
+        placeholder="x,y · @dx,dy · @100<45 · 100 = Abstand in Mausrichtung · Befehl (linie, kreis, ...)"
         className="flex-1 bg-transparent text-ink font-mono text-[12px] outline-none"
       />
     </div>
