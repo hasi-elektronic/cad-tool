@@ -30,7 +30,7 @@ interface CanvasProps {
 }
 
 export interface CommandAPI {
-  // Submit a value (point or distance) from the command line.
+  // Submit a value (point, distance or raw text) from the command line.
   submitValue: (val: string) => void;
   // Cancel current op (ESC).
   cancel: () => void;
@@ -39,7 +39,7 @@ export interface CommandAPI {
   // Zoom-fit on all entities.
   zoomFit: () => void;
   // The tool currently expects this kind of input.
-  expects: () => 'point' | 'distance' | 'none';
+  expects: () => 'point' | 'distance' | 'text' | 'none';
   // The current per-tool hint.
   hint: () => string;
 }
@@ -259,8 +259,9 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
   }
 
   function applyResult(r: ReturnType<Tool['step']>) {
-    if (r.commit && r.commit.length) store.addEntities(r.commit);
-    if (r.remove && r.remove.length) store.deleteEntities(r.remove);
+    // Add + remove happen in ONE history step so a move/rotate undoes as one.
+    if ((r.commit && r.commit.length) || (r.remove && r.remove.length))
+      store.applyChange(r.commit ?? [], r.remove ?? []);
     if (r.hint) {
       hintRef.current = r.hint;
       onHint(r.hint);
@@ -404,20 +405,18 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
       submitValue: (val) => {
         const t = toolRef.current;
         if (!t) return;
-        const v = val.trim();
         const expects = t.expects ? t.expects() : 'point';
         if (expects === 'point') {
-          const p = parsePoint(v, lastCommittedPointRef.current ?? cursorWorldRef.current);
+          const p = parsePoint(val.trim(), lastCommittedPointRef.current ?? cursorWorldRef.current);
           if (!p) return;
           const result = t.step({ type: 'value', point: p }, buildToolContext());
           lastCommittedPointRef.current = p;
           applyResult(result);
-        } else if (expects === 'distance') {
+        } else {
+          // 'distance' gets the trimmed number, 'text' the raw string.
+          const v = expects === 'text' ? val : val.trim();
           const result = t.step({ type: 'value', value: v }, buildToolContext());
           applyResult(result);
-        } else {
-          // fall back to value
-          t.step({ type: 'value', value: v }, buildToolContext());
         }
       },
       cancel: () => {

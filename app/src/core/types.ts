@@ -160,4 +160,7 @@ export type ToolId =
   | 'offset'
   | 'mirror'
   | 'copy'
-  | 'move';
+  | 'move'
+  | 'rotate'
+  | 'scale'
+  | 'text';

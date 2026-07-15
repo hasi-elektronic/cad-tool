@@ -112,16 +112,35 @@ const TOOLS: ToolButtonSpec[] = [
       <path stroke="currentColor" strokeWidth="2" fill="none" d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3 3M3 12l3-3M21 12l-3 3M21 12l-3-3" />
     </svg>
   ) },
+  { id: 'rotate', label: 'Drehen', short: 'Ro', group: 'edit', icon: (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
+      <path stroke="currentColor" strokeWidth="2" fill="none" d="M20 12a8 8 0 1 1-3-6.2" />
+      <path fill="currentColor" d="M20 3v5h-5z" />
+    </svg>
+  ) },
+  { id: 'scale', label: 'Skalieren', short: 'Sk', group: 'edit', icon: (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
+      <rect x="4" y="12" width="8" height="8" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path stroke="currentColor" strokeWidth="2" fill="none" d="M12 12L20 4M20 4h-5M20 4v5" />
+    </svg>
+  ) },
+  { id: 'text', label: 'Text', short: 'Tx', group: 'draw', icon: (
+    <svg viewBox="0 0 24 24" width="18" height="18" className={SQ}>
+      <path stroke="currentColor" strokeWidth="2" fill="none" d="M5 6V4h14v2M12 4v16M9 20h6" />
+    </svg>
+  ) },
 ];
 
 interface ToolbarProps {
   onZoomFit: () => void;
   onExport: () => void;
   onImport: () => void;
+  onSaveProject: () => void;
+  onNew: () => void;
   onHelp: () => void;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ onZoomFit, onExport, onImport, onHelp }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ onZoomFit, onExport, onImport, onSaveProject, onNew, onHelp }) => {
   const tool = useStore((s) => s.ui.tool);
   return (
     <div className="flex items-center gap-1 bg-panel border-b border-line px-2 py-1.5">
@@ -146,9 +165,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onZoomFit, onExport, onImport,
         </button>
       ))}
       <div className="ml-auto flex items-center gap-1 pl-3 border-l border-line">
+        <SmallBtn onClick={onNew} title="Neue Zeichnung (neu)">NEU</SmallBtn>
         <SmallBtn onClick={onZoomFit} title="Zoom anpassen (F)">ANPASSEN</SmallBtn>
-        <SmallBtn onClick={onImport} title="DXF öffnen">ÖFFNEN</SmallBtn>
-        <SmallBtn onClick={onExport} title="DXF speichern (Strg+S)">SPEICHERN</SmallBtn>
+        <SmallBtn onClick={onImport} title="DXF oder Projekt öffnen">ÖFFNEN</SmallBtn>
+        <SmallBtn onClick={onSaveProject} title="Projekt speichern (.json, verlustfrei)">PROJEKT</SmallBtn>
+        <SmallBtn onClick={onExport} title="DXF speichern (Strg+S)">DXF</SmallBtn>
         <SmallBtn onClick={onHelp} title="Hilfe (?)">?</SmallBtn>
       </div>
     </div>

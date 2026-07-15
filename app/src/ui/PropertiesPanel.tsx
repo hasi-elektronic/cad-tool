@@ -194,6 +194,13 @@ const SingleEntityProps: React.FC<{
           <Row label="Höhe">
             <NumInput value={entity.height} onCommit={(height) => update({ height } as any)} suffix="mm" />
           </Row>
+          <Row label="Drehung">
+            <NumInput
+              value={(entity.rotation * 180) / Math.PI}
+              onCommit={(deg) => update({ rotation: (deg * Math.PI) / 180 } as any)}
+              suffix="°"
+            />
+          </Row>
         </>
       )}
     </div>

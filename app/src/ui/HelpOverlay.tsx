@@ -15,6 +15,7 @@ const ROWS: [string, string][] = [
   ['V', 'Auswählen'],
   ['F', 'Abrunden (oder Zoom anpassen wenn frei)'],
   ['T', 'Stutzen'],
+  ['X', 'Auflösen (Rechteck/Polylinie → Linien)'],
   ['G', 'Raster ein/aus'],
   ['S', 'Fang ein/aus'],
   ['O', 'Ortho ein/aus'],
@@ -35,6 +36,9 @@ const PROMPTS: [string, string][] = [
   ['25', 'Beim Kreis/Versatz/Abrunden: numerischer Abstand'],
   ['linie / kreis / kreis...', 'Werkzeug nach Name aufrufen'],
   ['dimh / dimv / dimr / dimd / dima', 'Bemaßung horizontal/vertikal/Radius/Durchm./Winkel'],
+  ['drehen / skalieren / text', 'Drehen · Skalieren · Text platzieren'],
+  ['auflösen', 'Auswahl in Linien zerlegen'],
+  ['projekt / neu', 'Projekt speichern (.json) · Neue Zeichnung'],
   ['rückgängig / wiederherstellen', 'Verlauf'],
   ['anpassen', 'Zoom auf Zeichnung anpassen'],
 ];

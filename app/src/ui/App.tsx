@@ -7,9 +7,34 @@ import { StatusBar } from './StatusBar';
 import { CommandLine } from './CommandLine';
 import { HelpOverlay } from './HelpOverlay';
 import { store, useStore } from '../state/useStore';
-import type { SnapResult, ToolId } from '../core/types';
+import type { Entity, SnapResult, ToolId } from '../core/types';
 import { downloadDXF } from '../io/dxf-export';
-import { importDXFFromFile } from '../io/dxf-import';
+import { importDXFFromFile, parseDXF } from '../io/dxf-import';
+import { explodeEntity } from '../core/transform';
+import {
+  clearAutosave,
+  downloadProject,
+  parseProject,
+  readAutosave,
+  writeAutosave,
+} from '../io/project';
+
+// AUFLÖSEN: break selected rects/polylines into single lines (one undo step).
+function explodeSelection() {
+  const { entities } = store.get().doc;
+  const add: Entity[] = [];
+  const remove: string[] = [];
+  for (const id of store.get().ui.selectedIds) {
+    const ent = entities.find((e) => e.id === id);
+    if (!ent) continue;
+    const parts = explodeEntity(ent);
+    if (parts) {
+      add.push(...parts);
+      remove.push(id);
+    }
+  }
+  store.applyChange(add, remove);
+}
 
 export const App: React.FC = () => {
   const apiRef = useRef<CommandAPI | null>(null);
@@ -22,6 +47,52 @@ export const App: React.FC = () => {
   });
   const showHelp = useStore((s) => s.ui.showHelp);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Autosave: restore the last drawing on startup, then persist every
+  // (debounced) document change to localStorage.
+  useEffect(() => {
+    if (store.get().doc.entities.length === 0) {
+      const saved = readAutosave();
+      if (saved) store.setDocSilently(saved);
+    }
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const unsub = store.subscribe(() => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => writeAutosave(store.get().doc), 400);
+    });
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsub();
+    };
+  }, []);
+
+  // Desktop (Electron) file-association handler: the main process forwards
+  // OS-opened .dxf / .hasicad.json files as {name, content} payloads.
+  useEffect(() => {
+    const desktop = (window as unknown as {
+      hasiDesktop?: {
+        onOpenFile: (cb: (f: { name: string; content: string }) => void) => () => void;
+      };
+    }).hasiDesktop;
+    if (!desktop) return;
+    return desktop.onOpenFile(({ name, content }) => {
+      try {
+        if (/\.dxf$/i.test(name)) {
+          const result = parseDXF(content);
+          const existing = new Set(store.get().doc.layers.map((l) => l.name));
+          for (const layer of result.layers) {
+            if (!existing.has(layer.name)) store.addLayer(layer);
+          }
+          store.addEntities(result.entities);
+        } else {
+          store.loadDoc(parseProject(content));
+        }
+        apiRef.current?.zoomFit();
+      } catch (err) {
+        alert('Datei konnte nicht gelesen werden: ' + (err as Error).message);
+      }
+    });
+  }, []);
 
   // OS file-association handler: when launched from "Open with → HASI CAD",
   // the browser delivers FileSystemFileHandles via launchQueue. Pull each one
@@ -66,7 +137,19 @@ export const App: React.FC = () => {
       downloadDXF(store.get().doc, name);
     } else if (cmd === 'import') {
       fileInputRef.current?.click();
-    } else if (cmd === 'undo') store.undo();
+    } else if (cmd === 'saveproject') {
+      const name = prompt('Dateiname:', 'zeichnung.hasicad.json') ?? 'zeichnung.hasicad.json';
+      downloadProject(store.get().doc, name);
+    } else if (cmd === 'new') {
+      if (
+        store.get().doc.entities.length === 0 ||
+        confirm('Neue Zeichnung beginnen? Die aktuelle Zeichnung wird verworfen.')
+      ) {
+        store.resetAll();
+        clearAutosave();
+      }
+    } else if (cmd === 'explode') explodeSelection();
+    else if (cmd === 'undo') store.undo();
     else if (cmd === 'redo') store.redo();
     else if (cmd === 'fit') apiRef.current?.zoomFit();
     else if (cmd === 'help') store.setUI({ showHelp: true });
@@ -141,6 +224,7 @@ export const App: React.FC = () => {
         g: () => store.setUI({ showGrid: !store.get().ui.showGrid }),
         s: () => store.setUI({ snap: !store.get().ui.snap }),
         o: () => store.setUI({ ortho: !store.get().ui.ortho }),
+        x: () => explodeSelection(),
       };
 
       if (e.key === ' ') {
@@ -179,6 +263,8 @@ export const App: React.FC = () => {
         onZoomFit={() => apiRef.current?.zoomFit()}
         onExport={() => onCommand('export')}
         onImport={() => fileInputRef.current?.click()}
+        onSaveProject={() => onCommand('saveproject')}
+        onNew={() => onCommand('new')}
         onHelp={() => store.setUI({ showHelp: true })}
       />
       <div className="flex-1 flex min-h-0">
@@ -201,22 +287,28 @@ export const App: React.FC = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".dxf"
+        accept=".dxf,.json,.hasicad"
         className="hidden"
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
           try {
-            const result = await importDXFFromFile(f);
-            // Merge imported layers (skip ones already present by name).
-            const existing = new Set(store.get().doc.layers.map((l) => l.name));
-            for (const layer of result.layers) {
-              if (!existing.has(layer.name)) store.addLayer(layer);
+            if (/\.dxf$/i.test(f.name)) {
+              const result = await importDXFFromFile(f);
+              // Merge imported layers (skip ones already present by name).
+              const existing = new Set(store.get().doc.layers.map((l) => l.name));
+              for (const layer of result.layers) {
+                if (!existing.has(layer.name)) store.addLayer(layer);
+              }
+              store.addEntities(result.entities);
+            } else {
+              // Native project file replaces the whole document (undoable).
+              const doc = parseProject(await f.text());
+              store.loadDoc(doc);
             }
-            store.addEntities(result.entities);
             apiRef.current?.zoomFit();
           } catch (err) {
-            alert('DXF konnte nicht gelesen werden: ' + (err as Error).message);
+            alert('Datei konnte nicht gelesen werden: ' + (err as Error).message);
           }
           (e.target as HTMLInputElement).value = '';
         }}

@@ -1,0 +1,44 @@
+# Builds the HASI CAD Windows desktop app (.exe) with Electron.
+# - Every push to main (app/ changes): installer + portable exe as workflow artifact.
+# - Every v* tag: same binaries attached to a GitHub Release.
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-exe.yml'
+  workflow_dispatch:
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run build:desktop
+      - name: Package with electron-builder
+        run: npx electron-builder --win --publish never
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HASI-CAD-Windows
+          path: app/release/*.exe
+          if-no-files-found: error
+      - name: Attach to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/release/*.exe

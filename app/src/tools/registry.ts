@@ -18,6 +18,9 @@ import { MirrorTool } from './mirror';
 import { OffsetTool } from './offset';
 import { TrimTool } from './trim';
 import { FilletTool } from './fillet';
+import { RotateTool } from './rotate';
+import { ScaleTool } from './scale';
+import { TextTool } from './text';
 
 export interface ToolFactoryCtx {
   getEntity: (id: string) => Entity | undefined;
@@ -65,5 +68,11 @@ export function createTool(id: ToolId, ctx: ToolFactoryCtx): Tool {
       return new TrimTool({ getAll: ctx.getAll });
     case 'fillet':
       return new FilletTool({ getAll: ctx.getAll });
+    case 'rotate':
+      return new RotateTool({ ids: ctx.selectedIds(), getEntity: ctx.getEntity });
+    case 'scale':
+      return new ScaleTool({ ids: ctx.selectedIds(), getEntity: ctx.getEntity });
+    case 'text':
+      return new TextTool();
   }
 }
