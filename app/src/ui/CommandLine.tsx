@@ -33,6 +33,12 @@ export const CommandLine: React.FC<CommandLineProps> = ({ api, hint, onCommand }
     setHistory((h) => [...h, v]);
     setHi(-1);
     setVal('');
+    // When the active tool wants raw text (TEXT tool), pass everything
+    // through untouched — otherwise "l" would switch to the line tool.
+    if (api && api.expects() === 'text') {
+      api.submitValue(val);
+      return;
+    }
     // First, check whether it's a command alias for a tool/action.
     if (!handleAsCommand(v, onCommand) && api) {
       api.submitValue(v);
@@ -135,6 +141,21 @@ function handleAsCommand(v: string, onCommand: (raw: string) => void): boolean {
     verschieben: 'tool:move',
     copy: 'tool:copy',
     kopieren: 'tool:copy',
+    rotate: 'tool:rotate',
+    drehen: 'tool:rotate',
+    ro: 'tool:rotate',
+    scale: 'tool:scale',
+    skalieren: 'tool:scale',
+    sk: 'tool:scale',
+    sc: 'tool:scale',
+    text: 'tool:text',
+    dtext: 'tool:text',
+    dt: 'tool:text',
+    txt: 'tool:text',
+    explode: 'explode',
+    aufloesen: 'explode',
+    auflösen: 'explode',
+    x: 'explode',
     mirror: 'tool:mirror',
     spiegeln: 'tool:mirror',
     offset: 'tool:offset',
@@ -151,6 +172,11 @@ function handleAsCommand(v: string, onCommand: (raw: string) => void): boolean {
     import: 'import',
     öffnen: 'import',
     oeffnen: 'import',
+    projekt: 'saveproject',
+    project: 'saveproject',
+    saveproject: 'saveproject',
+    neu: 'new',
+    new: 'new',
     undo: 'undo',
     rückgängig: 'undo',
     rueckgaengig: 'undo',

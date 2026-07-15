@@ -1,13 +1,17 @@
 {
   "name": "hasi-cad",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "deploy": "wrangler pages deploy dist --project-name=hasi-cad"
+    "deploy": "wrangler pages deploy dist --project-name=hasi-cad",
+    "build:desktop": "tsc -b && vite build --base=./",
+    "electron:preview": "npm run build:desktop && electron .",
+    "dist:win": "npm run build:desktop && electron-builder --win --publish never"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -18,10 +22,50 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "vite-plugin-pwa": "^0.20.5"
+  },
+  "build": {
+    "appId": "de.hasielektronic.cad",
+    "productName": "HASI CAD",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "fileAssociations": [
+        {
+          "ext": "dxf",
+          "name": "DXF-Zeichnung",
+          "role": "Editor"
+        },
+        {
+          "ext": "hasicad",
+          "name": "HASI CAD Projekt",
+          "role": "Editor"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "HASI-CAD-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "HASI-CAD-Portable-${version}.${ext}"
+    }
   }
 }

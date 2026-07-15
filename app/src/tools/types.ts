@@ -39,5 +39,6 @@ export interface Tool {
   // Render-only preview based on current internal state and cursor position.
   preview(ctx: ToolContext): Entity[];
   // Allow a tool to declare which command-line input format it expects ("dist", "point", etc.).
-  expects?(): 'point' | 'distance' | 'none';
+  // 'text' means the command line passes raw text through without alias/point parsing.
+  expects?(): 'point' | 'distance' | 'text' | 'none';
 }

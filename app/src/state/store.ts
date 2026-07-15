@@ -106,6 +106,23 @@ export class Store {
     this.commitDoc(next);
   }
 
+  // Atomic add+remove in ONE history step — a move/rotate/trim is a single
+  // operation for the user and must undo as one.
+  applyChange(add: Entity[], removeIds: string[]) {
+    if (!add.length && !removeIds.length) return;
+    const remove = new Set(removeIds);
+    const next = this.snapshotDoc();
+    next.entities = [
+      ...next.entities.filter((e) => !remove.has(e.id)),
+      ...add.map((e) => structuredClone(e)),
+    ];
+    this.commitDoc(next);
+    if (remove.size) {
+      const sel = this.state.ui.selectedIds.filter((id) => !remove.has(id));
+      if (sel.length !== this.state.ui.selectedIds.length) this.setSelection(sel);
+    }
+  }
+
   deleteEntities(ids: string[]) {
     if (!ids.length) return;
     const set = new Set(ids);
@@ -175,6 +192,29 @@ export class Store {
 
   setSelection(ids: string[]) {
     this.setUI({ selectedIds: ids });
+  }
+
+  // Replace the whole document (project open) — undoable.
+  loadDoc(doc: DocState) {
+    this.commitDoc({
+      entities: doc.entities.map((e) => structuredClone(e)),
+      layers: doc.layers.map((l) => ({ ...l })),
+      activeLayerId: doc.activeLayerId,
+    });
+    this.setSelection([]);
+  }
+
+  // Restore without touching history (autosave restore on startup).
+  setDocSilently(doc: DocState) {
+    this.state = {
+      ...this.state,
+      doc: {
+        entities: doc.entities.map((e) => structuredClone(e)),
+        layers: doc.layers.map((l) => ({ ...l })),
+        activeLayerId: doc.activeLayerId,
+      },
+    };
+    this.emit();
   }
 
   resetAll() {
