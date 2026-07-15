@@ -125,7 +125,16 @@ export type Entity =
 
 export interface SnapResult {
   point: Point;
-  type: 'endpoint' | 'midpoint' | 'center' | 'intersection' | 'grid' | 'quadrant';
+  type:
+    | 'endpoint'
+    | 'midpoint'
+    | 'center'
+    | 'intersection'
+    | 'grid'
+    | 'quadrant'
+    | 'perpendicular'
+    | 'tangent'
+    | 'nearest';
   entityId?: string;
 }
 
@@ -163,4 +172,7 @@ export type ToolId =
   | 'move'
   | 'rotate'
   | 'scale'
-  | 'text';
+  | 'text'
+  | 'extend'
+  | 'array_rect'
+  | 'array_polar';

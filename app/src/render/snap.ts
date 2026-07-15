@@ -8,6 +8,9 @@ const SNAP_LABEL_DE: Record<SnapResult['type'], string> = {
   intersection: 'Schnittpunkt',
   grid: 'Raster',
   quadrant: 'Quadrant',
+  perpendicular: 'Lot',
+  tangent: 'Tangente',
+  nearest: 'Nächster',
 };
 
 export function drawSnapMarker(
@@ -51,6 +54,37 @@ export function drawSnapMarker(
       ctx.lineTo(p.x + 6, p.y + 6);
       ctx.moveTo(p.x - 6, p.y + 6);
       ctx.lineTo(p.x + 6, p.y - 6);
+      ctx.stroke();
+      break;
+    case 'perpendicular':
+      // Right-angle symbol (like AutoCAD's Lot marker).
+      ctx.beginPath();
+      ctx.moveTo(p.x - 6, p.y - 6);
+      ctx.lineTo(p.x - 6, p.y + 6);
+      ctx.lineTo(p.x + 6, p.y + 6);
+      ctx.moveTo(p.x - 6, p.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.lineTo(p.x, p.y + 6);
+      ctx.stroke();
+      break;
+    case 'tangent':
+      // Circle with a tangent bar on top.
+      ctx.beginPath();
+      ctx.arc(p.x, p.y + 2, 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(p.x - 7, p.y - 4);
+      ctx.lineTo(p.x + 7, p.y - 4);
+      ctx.stroke();
+      break;
+    case 'nearest':
+      // Hourglass (bow-tie) like AutoCAD's Nearest marker.
+      ctx.beginPath();
+      ctx.moveTo(p.x - 6, p.y - 6);
+      ctx.lineTo(p.x + 6, p.y - 6);
+      ctx.lineTo(p.x - 6, p.y + 6);
+      ctx.lineTo(p.x + 6, p.y + 6);
+      ctx.closePath();
       ctx.stroke();
       break;
     case 'grid':

@@ -1,4 +1,4 @@
-import type { Entity, Layer, ToolId } from '../core/types';
+import type { Entity, Layer, SnapType, ToolId } from '../core/types';
 
 export interface DocState {
   entities: Entity[];
@@ -17,6 +17,8 @@ export interface UIState {
   gridMinor: number;
   // Help overlay visibility
   showHelp: boolean;
+  // Per-type object snap flags (missing key = enabled).
+  snapTypes: Partial<Record<SnapType, boolean>>;
 }
 
 export interface AppState {
@@ -46,6 +48,7 @@ const initialState = (): AppState => ({
     showGrid: true,
     gridMinor: 10,
     showHelp: false,
+    snapTypes: {},
   },
 });
 
@@ -187,7 +190,10 @@ export class Store {
   }
 
   setTool(tool: ToolId) {
-    this.setUI({ tool, selectedIds: [] });
+    // Keep the selection: tools like Verschieben/Drehen/Reihe consume it.
+    // (Clearing here made every selection-based tool a silent no-op when
+    // invoked via toolbar or command line.)
+    this.setUI({ tool });
   }
 
   setSelection(ids: string[]) {
