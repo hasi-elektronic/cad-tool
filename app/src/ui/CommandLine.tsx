@@ -81,7 +81,7 @@ export const CommandLine: React.FC<CommandLineProps> = ({ api, hint, onCommand }
             }
           }
         }}
-        placeholder="x,y  oder  @dx,dy  oder  Abstand  oder  Befehl (linie, kreis, ...)"
+        placeholder="x,y · @dx,dy · @100<45 · 100 = Abstand in Mausrichtung · Befehl (linie, kreis, ...)"
         className="flex-1 bg-transparent text-ink font-mono text-[12px] outline-none"
       />
     </div>
@@ -156,6 +156,16 @@ function handleAsCommand(v: string, onCommand: (raw: string) => void): boolean {
     aufloesen: 'explode',
     auflösen: 'explode',
     x: 'explode',
+    extend: 'tool:extend',
+    dehnen: 'tool:extend',
+    dh: 'tool:extend',
+    array: 'tool:array_rect',
+    reihe: 'tool:array_rect',
+    re: 'tool:array_rect',
+    polararray: 'tool:array_polar',
+    polarreihe: 'tool:array_polar',
+    pre: 'tool:array_polar',
+    lochkreis: 'tool:array_polar',
     mirror: 'tool:mirror',
     spiegeln: 'tool:mirror',
     offset: 'tool:offset',

@@ -16,6 +16,7 @@ import { entityBox, isEmpty, unionBox } from '../core/bbox';
 import { createTool, type ToolFactoryCtx } from '../tools/registry';
 import type { Tool } from '../tools/types';
 import { distance, formatNumber } from '../core/math';
+import { gripsOf, moveGrip, type Grip } from '../core/grips';
 
 interface CanvasHandle {
   setStatus: (s: { x: number; y: number; snap: SnapResult | null }) => void;
@@ -61,6 +62,12 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
   const hintRef = useRef<string>('');
   const lastCommittedPointRef = useRef<Point | null>(null);
   const dragSelectRef = useRef<{ start: Point } | null>(null);
+  // Object-snap tracking: recently acquired snap points that spawn
+  // horizontal/vertical alignment guides (AutoCAD "Spurverfolgung").
+  const acquiredRef = useRef<Point[]>([]);
+  const trackGuidesRef = useRef<{ src: Point; axis: 'x' | 'y' }[]>([]);
+  // Grip editing (select tool): the grip currently being dragged.
+  const gripDragRef = useRef<{ entityId: string; grip: Grip } | null>(null);
 
   // We only subscribe to the active tool to drive the tool-recreation effect.
   // Other UI flags (ortho/snap/grid/gridMinor) are read directly from the store
@@ -79,6 +86,9 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
     onHint(hintRef.current);
     previewRef.current = [];
     lastCommittedPointRef.current = null;
+    acquiredRef.current = [];
+    trackGuidesRef.current = [];
+    gripDragRef.current = null;
     requestRender();
   }, [tool, onHint]);
 
@@ -163,9 +173,56 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
     // jumps to the snapped (or ortho-constrained) position so the cursor
     // physically locks to the geometry instead of just reporting it on click.
     const eff = effectiveCursor();
-    const visualScreen = snapRef.current || hasOrthoLock()
+    const tracking = trackGuidesRef.current.length > 0;
+    const visualScreen = snapRef.current || hasOrthoLock() || tracking
       ? worldToScreen(v, eff)
       : cursorScreenRef.current;
+
+    // Tracking guides: dashed alignment rays from acquired points.
+    if (tracking) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(91, 214, 106, 0.65)';
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 1;
+      for (const g of trackGuidesRef.current) {
+        const s = worldToScreen(v, g.src);
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(visualScreen.x, visualScreen.y);
+        ctx.stroke();
+        // Small cross at the source point.
+        ctx.beginPath();
+        ctx.moveTo(s.x - 4, s.y);
+        ctx.lineTo(s.x + 4, s.y);
+        ctx.moveTo(s.x, s.y - 4);
+        ctx.lineTo(s.x, s.y + 4);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Grips (select tool): blue squares on every selected entity.
+    if (store.get().ui.tool === 'select' && sel.size) {
+      ctx.save();
+      for (const e of entities) {
+        if (!sel.has(e.id)) continue;
+        for (const g of gripsOf(e)) {
+          const gs = worldToScreen(v, g.point);
+          const active =
+            gripDragRef.current &&
+            gripDragRef.current.entityId === e.id &&
+            gripDragRef.current.grip.index === g.index;
+          ctx.fillStyle = active ? '#ff5b5b' : '#33afe2';
+          ctx.strokeStyle = '#0e1420';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.rect(gs.x - 4, gs.y - 4, 8, 8);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
     const locked = !!snapRef.current;
     drawCrosshair(ctx, visualScreen, v.width, v.height, locked);
     if (locked) drawMagnetLink(ctx, cursorScreenRef.current, visualScreen);
@@ -218,20 +275,33 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
       : { x: from.x, y: from.y + dy };
   }
 
-  function recomputeSnap() {
+  function recomputeSnap(excludeId?: string) {
     const v = viewportRef.current;
     const world = screenToWorld(v, cursorScreenRef.current);
     cursorWorldRef.current = world;
     const ui = store.get().ui;
     if (ui.snap) {
-      const s = findSnap(world, store.get().doc.entities, v, {
+      const ents = excludeId
+        ? store.get().doc.entities.filter((e) => e.id !== excludeId)
+        : store.get().doc.entities;
+      const s = findSnap(world, ents, v, {
         enabled: true,
         gridStep: ui.gridMinor,
         // Generous magnet radius so the cursor reliably "sticks" to nearby
         // geometry without the user having to hover pixel-perfectly.
         pickRadiusPx: 16,
+        from: lastCommittedPointRef.current,
+        types: ui.snapTypes,
       });
       snapRef.current = s;
+      // Acquire tracking sources from strong snaps (not grid/nearest noise).
+      if (s && s.type !== 'grid' && s.type !== 'nearest') {
+        const acq = acquiredRef.current;
+        if (!acq.some((p) => distance(p, s.point) < 1e-6)) {
+          acq.unshift({ ...s.point });
+          if (acq.length > 3) acq.pop();
+        }
+      }
     } else {
       snapRef.current = null;
     }
@@ -240,7 +310,38 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
 
   function effectiveCursor(): Point {
     const raw = snapRef.current?.point ?? cursorWorldRef.current;
-    return applyOrtho(raw);
+    // A direct object snap always wins; ortho constrains relative to the
+    // tool's base point; tracking guides only kick in when neither applies.
+    if (snapRef.current || hasOrthoLock()) {
+      trackGuidesRef.current = [];
+      return applyOrtho(raw);
+    }
+    if (!store.get().ui.snap) {
+      trackGuidesRef.current = [];
+      return raw;
+    }
+    const tol = 8 / viewportRef.current.scale;
+    const sources: Point[] = [];
+    if (lastCommittedPointRef.current) sources.push(lastCommittedPointRef.current);
+    sources.push(...acquiredRef.current);
+    const p = { ...raw };
+    const guides: { src: Point; axis: 'x' | 'y' }[] = [];
+    for (const src of sources) {
+      if (Math.abs(p.x - src.x) < tol) {
+        p.x = src.x;
+        guides.push({ src, axis: 'x' });
+        break;
+      }
+    }
+    for (const src of sources) {
+      if (Math.abs(p.y - src.y) < tol) {
+        p.y = src.y;
+        guides.push({ src, axis: 'y' });
+        break;
+      }
+    }
+    trackGuidesRef.current = guides;
+    return p;
   }
 
   function buildToolContext() {
@@ -302,6 +403,14 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
     const t = store.get().ui.tool;
 
     if (t === 'select') {
+      // Grip hit-test first: clicking a grip of a selected entity starts a
+      // grip drag instead of re-selecting.
+      const gripHit = findGripAt(sp);
+      if (gripHit) {
+        gripDragRef.current = gripHit;
+        requestRender();
+        return;
+      }
       const hit = pickEntity(cur, viewportRef.current);
       if (hit) {
         const cur = store.get().ui.selectedIds;
@@ -341,6 +450,18 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
       return;
     }
     lastMouseRef.current = sp;
+    if (gripDragRef.current) {
+      // Grip drag: snap against everything except the edited entity, then
+      // preview the modified shape live.
+      recomputeSnap(gripDragRef.current.entityId);
+      const ent = store.get().doc.entities.find((e) => e.id === gripDragRef.current!.entityId);
+      if (ent) {
+        const moved = moveGrip(ent, gripDragRef.current.grip, effectiveCursor());
+        previewRef.current = [{ ...moved, id: 'preview-grip' }];
+      }
+      requestRender();
+      return;
+    }
     recomputeSnap();
     if (toolRef.current) toolRef.current.step({ type: 'move', point: effectiveCursor() }, buildToolContext());
     refreshPreview();
@@ -349,6 +470,18 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
   function onMouseUp(ev: React.MouseEvent) {
     if (isPanningRef.current && (ev.button === 1 || ev.button === 0)) {
       isPanningRef.current = false;
+      return;
+    }
+    if (gripDragRef.current && ev.button === 0) {
+      const { entityId, grip } = gripDragRef.current;
+      gripDragRef.current = null;
+      previewRef.current = [];
+      const ent = store.get().doc.entities.find((e) => e.id === entityId);
+      if (ent) {
+        const moved = moveGrip(ent, grip, effectiveCursor());
+        store.updateEntity(entityId, moved as Partial<Entity>);
+      }
+      requestRender();
       return;
     }
     if (dragSelectRef.current && ev.button === 0) {
@@ -383,6 +516,21 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
     requestRender();
   }
 
+  // Find a grip of any selected entity within pick range of the screen point.
+  function findGripAt(sp: Point): { entityId: string; grip: Grip } | null {
+    const v = viewportRef.current;
+    const sel = new Set(store.get().ui.selectedIds);
+    if (!sel.size) return null;
+    for (const e of store.get().doc.entities) {
+      if (!sel.has(e.id)) continue;
+      for (const g of gripsOf(e)) {
+        const gs = worldToScreen(v, g.point);
+        if (Math.hypot(gs.x - sp.x, gs.y - sp.y) <= 7) return { entityId: e.id, grip: g };
+      }
+    }
+    return null;
+  }
+
   function pickEntity(p: Point, v: Viewport): string | null {
     const tolerance = 6 / v.scale;
     let best: string | null = null;
@@ -407,7 +555,24 @@ export const Canvas: React.FC<CanvasProps> = ({ registerCommand, onStatus, onHin
         if (!t) return;
         const expects = t.expects ? t.expects() : 'point';
         if (expects === 'point') {
-          const p = parsePoint(val.trim(), lastCommittedPointRef.current ?? cursorWorldRef.current);
+          const v = val.trim();
+          const from = lastCommittedPointRef.current;
+          let p: Point | null = null;
+          // Direct distance entry (AutoCAD style): a plain number draws that
+          // many mm from the last point towards the current cursor direction
+          // (ortho/snap-aware via effectiveCursor).
+          if (from && /^-?\d+(?:\.\d+)?$/.test(v)) {
+            const d = parseFloat(v);
+            const to = effectiveCursor();
+            const len = Math.hypot(to.x - from.x, to.y - from.y);
+            if (isFinite(d) && len > 1e-9) {
+              p = {
+                x: from.x + ((to.x - from.x) / len) * d,
+                y: from.y + ((to.y - from.y) / len) * d,
+              };
+            }
+          }
+          if (!p) p = parsePoint(v, from ?? cursorWorldRef.current);
           if (!p) return;
           const result = t.step({ type: 'value', point: p }, buildToolContext());
           lastCommittedPointRef.current = p;
@@ -562,12 +727,20 @@ function drawUCS(ctx: CanvasRenderingContext2D, v: Viewport) {
   ctx.restore();
 }
 
-// Parse "x,y" (absolute) or "@dx,dy" (relative to last point).
+// Parse "x,y" (absolute), "@dx,dy" (relative to last point) or polar
+// "@100<45" (100 mm at 45°, CCW from +X, relative to last point).
 function parsePoint(s: string, lastPoint: Point | null): Point | null {
   const trimmed = s.trim();
   if (!trimmed) return null;
   const rel = trimmed.startsWith('@');
   const body = rel ? trimmed.slice(1) : trimmed;
+  const polar = body.match(/^(-?\d+(?:\.\d+)?)\s*<\s*(-?\d+(?:\.\d+)?)$/);
+  if (polar) {
+    const d = parseFloat(polar[1]);
+    const ang = (parseFloat(polar[2]) * Math.PI) / 180;
+    const base = rel && lastPoint ? lastPoint : { x: 0, y: 0 };
+    return { x: base.x + d * Math.cos(ang), y: base.y + d * Math.sin(ang) };
+  }
   const parts = body.split(/[,\s]+/).filter(Boolean);
   if (parts.length !== 2) return null;
   const x = parseFloat(parts[0]);

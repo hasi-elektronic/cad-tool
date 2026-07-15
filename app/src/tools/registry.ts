@@ -21,6 +21,8 @@ import { FilletTool } from './fillet';
 import { RotateTool } from './rotate';
 import { ScaleTool } from './scale';
 import { TextTool } from './text';
+import { ExtendTool } from './extend';
+import { RectArrayTool, PolarArrayTool } from './array';
 
 export interface ToolFactoryCtx {
   getEntity: (id: string) => Entity | undefined;
@@ -74,5 +76,11 @@ export function createTool(id: ToolId, ctx: ToolFactoryCtx): Tool {
       return new ScaleTool({ ids: ctx.selectedIds(), getEntity: ctx.getEntity });
     case 'text':
       return new TextTool();
+    case 'extend':
+      return new ExtendTool({ getAll: ctx.getAll });
+    case 'array_rect':
+      return new RectArrayTool({ ids: ctx.selectedIds(), getEntity: ctx.getEntity });
+    case 'array_polar':
+      return new PolarArrayTool({ ids: ctx.selectedIds(), getEntity: ctx.getEntity });
   }
 }

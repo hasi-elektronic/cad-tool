@@ -1,7 +1,20 @@
 import React from 'react';
 import { store, useStore } from '../state/useStore';
 import { formatNumber } from '../core/math';
-import type { SnapResult } from '../core/types';
+import type { SnapResult, SnapType } from '../core/types';
+
+// Object-snap type chips (label → type), AutoCAD-style abbreviations.
+const SNAP_CHIPS: { label: string; type: SnapType; title: string }[] = [
+  { label: 'END', type: 'endpoint', title: 'Endpunkt' },
+  { label: 'MIT', type: 'midpoint', title: 'Mittelpunkt' },
+  { label: 'ZEN', type: 'center', title: 'Zentrum' },
+  { label: 'QUA', type: 'quadrant', title: 'Quadrant' },
+  { label: 'SCH', type: 'intersection', title: 'Schnittpunkt' },
+  { label: 'LOT', type: 'perpendicular', title: 'Lot (senkrecht)' },
+  { label: 'TAN', type: 'tangent', title: 'Tangente' },
+  { label: 'NÄH', type: 'nearest', title: 'Nächster Punkt' },
+  { label: 'RAS', type: 'grid', title: 'Rasterfang' },
+];
 
 interface StatusBarProps {
   cursorX: number;
@@ -17,6 +30,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ cursorX, cursorY, zoom, sn
   const snapEnabled = useStore((s) => s.ui.snap);
   const showGrid = useStore((s) => s.ui.showGrid);
   const gridMinor = useStore((s) => s.ui.gridMinor);
+  const snapTypes = useStore((s) => s.ui.snapTypes);
   const layers = useStore((s) => s.doc.layers);
   const active = useStore((s) => s.doc.activeLayerId);
   const activeLayer = layers.find((l) => l.id === active);
@@ -30,6 +44,24 @@ export const StatusBar: React.FC<StatusBarProps> = ({ cursorX, cursorY, zoom, sn
       <Toggle on={ortho} onClick={() => store.setUI({ ortho: !ortho })}>ORTHO</Toggle>
       <Toggle on={snapEnabled} onClick={() => store.setUI({ snap: !snapEnabled })}>FANG</Toggle>
       <Toggle on={showGrid} onClick={() => store.setUI({ showGrid: !showGrid })}>RASTER</Toggle>
+      <span className="opacity-50">|</span>
+      {SNAP_CHIPS.map((c) => (
+        <button
+          key={c.type}
+          title={c.title}
+          onClick={() =>
+            store.setUI({ snapTypes: { ...snapTypes, [c.type]: snapTypes[c.type] === false } })
+          }
+          className={
+            'px-1 py-0.5 rounded text-[9px] font-bold ' +
+            (snapTypes[c.type] !== false && snapEnabled
+              ? 'text-amber-300/90 bg-amber-300/10'
+              : 'text-muted/60 hover:text-ink line-through')
+          }
+        >
+          {c.label}
+        </button>
+      ))}
       <span className="opacity-50">|</span>
       <span>RASTER
         <select
@@ -57,6 +89,9 @@ function snapTypeDe(t: SnapResult['type']): string {
     case 'intersection': return 'Schnittpunkt';
     case 'grid': return 'Raster';
     case 'quadrant': return 'Quadrant';
+    case 'perpendicular': return 'Lot';
+    case 'tangent': return 'Tangente';
+    case 'nearest': return 'Nächster';
   }
 }
 

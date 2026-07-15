@@ -33,10 +33,14 @@ const ROWS: [string, string][] = [
 const PROMPTS: [string, string][] = [
   ['100,50', 'Absoluter Punkt (100, 50)'],
   ['@30,0', 'Relativer Punkt: 30 nach rechts'],
+  ['100', 'Direktabstand: Maus in Richtung halten, Länge tippen, Enter'],
+  ['@100<45', 'Polar: 100 mm unter 45° vom letzten Punkt'],
   ['25', 'Beim Kreis/Versatz/Abrunden: numerischer Abstand'],
   ['linie / kreis / kreis...', 'Werkzeug nach Name aufrufen'],
   ['dimh / dimv / dimr / dimd / dima', 'Bemaßung horizontal/vertikal/Radius/Durchm./Winkel'],
   ['drehen / skalieren / text', 'Drehen · Skalieren · Text platzieren'],
+  ['dehnen', 'Linie bis zur nächsten Kante verlängern'],
+  ['reihe / polarreihe', 'Reihe: 4,3 → Basis → Versatz · Polar: Zentrum → Anzahl'],
   ['auflösen', 'Auswahl in Linien zerlegen'],
   ['projekt / neu', 'Projekt speichern (.json) · Neue Zeichnung'],
   ['rückgängig / wiederherstellen', 'Verlauf'],
@@ -81,8 +85,11 @@ export const HelpOverlay: React.FC<Props> = ({ onClose }) => (
             </div>
           ))}
           <div className="mt-4 text-muted text-[10px] leading-relaxed">
-            Fang-Priorität: Endpunkt &gt; Mittelpunkt/Quadrant &gt; Zentrum &gt; Schnittpunkt &gt; Raster.
-            Gelbes Quadrat = Endpunkt, Dreieck = Mittelpunkt, Kreis = Zentrum, ✕ = Schnittpunkt.
+            Fang-Priorität: Endpunkt &gt; Mittelpunkt/Quadrant &gt; Zentrum &gt; Schnittpunkt &gt;
+            Lot/Tangente &gt; Nächster &gt; Raster. Fang-Arten unten in der Statusleiste einzeln
+            schaltbar. Grüne gestrichelte Linien = Spurverfolgung (Ausrichtung an letzten
+            Fangpunkten). Blaue Quadrate an ausgewählten Objekten = Griffe: ziehen zum Ändern
+            (Endpunkt, Radius, Eckpunkt — mit Fang).
           </div>
         </div>
       </div>
